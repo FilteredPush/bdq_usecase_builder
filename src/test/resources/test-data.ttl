@@ -1,0 +1,28 @@
+@prefix bdqffdq: <https://rs.tdwg.org/bdqffdq/terms/> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+# ---------------------------------------------------------------------------
+# Minimal RDF test fixture for unit tests
+# ---------------------------------------------------------------------------
+
+# A sample use case
+<urn:uuid:test-usecase-001>
+    a bdqffdq:UseCase ;
+    rdfs:label "Test Use Case" ;
+    rdfs:comment "A use case for unit testing" .
+
+# Sample test: Validation
+<https://rs.tdwg.org/bdqtest/terms/test-validation-001>
+    a bdqffdq:Validation ;
+    rdfs:label "Test Validation 001" .
+
+# Sample test: Measure
+<https://rs.tdwg.org/bdqtest/terms/test-measure-001>
+    a bdqffdq:Measure ;
+    rdfs:label "Test Measure 001" .
+
+# Sample test: Amendment
+<https://rs.tdwg.org/bdqtest/terms/test-amendment-001>
+    a bdqffdq:Amendment ;
+    rdfs:label "Test Amendment 001" .
