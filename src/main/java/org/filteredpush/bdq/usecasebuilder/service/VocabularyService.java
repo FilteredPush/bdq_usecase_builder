@@ -169,7 +169,7 @@ public class VocabularyService {
         }
     }
 
-    static List<String> parseCsvLine(String line) {
+    private static List<String> parseCsvLine(String line) {
         List<String> fields = new ArrayList<>();
         StringBuilder current = new StringBuilder();
         boolean inQuotes = false;

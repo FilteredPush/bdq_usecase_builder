@@ -118,7 +118,7 @@ public class InformationElementsPage extends WizardPage {
         termCombo.setPrototypeDisplayValue("dwc:coordinateUncertaintyInMeters");
         termCombo.setToolTipText("Pick from Darwin Core, Audiovisual Core, or custom vocabularies");
         JButton addButton = new JButton("Add");
-        JButton addTypedButton = new JButton("Add typed term");
+        JButton addTypedButton = new JButton("Add selected term");
         JButton removeButton = new JButton("Remove");
 
         addButton.addActionListener(e -> addRow());
