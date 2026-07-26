@@ -1,0 +1,62 @@
+iri,label,prefLabel,type,dimension
+https://rs.tdwg.org/bdqtest/terms/01c6dafa-0886-4b7e-9881-2c3018c98bdc,VALIDATION_TAXONRANK_NOTEMPTY,Validation dwc:taxonRank Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/06851339-843f-4a43-8422-4e61b9a00e75,VALIDATION_KINGDOM_FOUND,Validation dwc:kingdom Found in bdq:sourceAuthority,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/0493bcfb-652e-4d17-815b-b0cce0742fbe,VALIDATION_TAXON_UNAMBIGUOUS,Validation dwc:Taxon Unambiguous,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/07c28ace-561a-476e-a9b9-3d5ad6e35933,VALIDATION_NAMEPUBLISHEDINYEAR_NOTEMPTY,Validation dwc:namePublishedInYear Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/0949110d-c06b-450e-9649-7c1374d940d1,VALIDATION_OCCURRENCESTATUS_STANDARD,Validation dwc:occurrenceStatus Standard,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/0bb8297d-8f8a-42d2-80c1-558f29efe798,VALIDATION_OCCURRENCESTATUS_NOTEMPTY,Validation dwc:occurrenceStatus Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/13d5a10e-188e-40fd-a22c-dbaa87b91df2,VALIDATION_CLASSS_FOUND,Validation dwc:class Found in bdq:sourceAuthority,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/14da5b87-8304-4b2b-911d-117e3c29e890,VALIDATION_COORDINATEUNCERTAINTYINMETERS_INRANGE,Validation dwc:coordinateUncertaintyInMeters In Range,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/15f78619-811a-4c6f-997a-a4ce408af705,VALIDATION_TAXON_NOTEMPTY,Validation dwc:Taxon Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/17f03f1f-f74d-40c0-8071-2927cfc9487b,VALIDATION_ENDDAYOFYEAR_INRANGE,Validation dwc:endDayOfYear In Range,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/1bf0e210-6792-4128-b8cc-ab6828aa4871,VALIDATION_SCIENTIFICNAMEAUTHORSHIP_NOTEMPTY,Validation dwc:scientificNameAuthorship Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/239ec40e-a729-4a8e-ba69-e0bf03ac1c44,VALIDATION_MONTH_STANDARD,Validation dwc:month Standard,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/2750c040-1d4a-4149-99fe-0512785f2d5f,VALIDATION_DATEIDENTIFIED_INRANGE,Validation dwc:dateIdentified In Range,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/2cd6884e-3d14-4476-94f7-1191cfff309b,VALIDATION_TAXONRANK_STANDARD,Validation dwc:taxonRank Standard,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/3136236e-04b6-49d2-8651-2f8d3e7d2b23,VALIDATION_FAMILY_FOUND,Validation dwc:family Found in bdq:sourceAuthority,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/36ed36c9-b1a7-40b2-b5e2-0d012e772098,VALIDATION_OCCURRENCEID_NOTEMPTY,Validation dwc:occurrenceID Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/3cff4dc4-72e9-4abe-9bf3-8a30f1618432,VALIDATION_ENDDAYOFYEAR_NOTEMPTY,Validation dwc:endDayOfYear Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/3f335517-f442-4b98-b149-1e87ff16de45,VALIDATION_SCIENTIFICNAME_FOUND,Validation dwc:scientificName Found in bdq:sourceAuthority,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/401bf207-9a55-4dff-88a5-abcd58ad97fa,VALIDATION_CLASSS_NOTEMPTY,Validation dwc:class Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/42408a00-bf71-4892-a399-4325e2bc1fb8,VALIDATION_DECIMALLONGITUDE_INRANGE,Validation dwc:decimalLongitude In Range,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/47ff73ba-0028-4f79-9ce1-ee7b2130f498,VALIDATION_SCIENTIFICNAME_NOTEMPTY,Validation dwc:scientificName Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/4833a522-12eb-4fe0-b4cf-7f7a337a6048,VALIDATION_GENUS_FOUND,Validation dwc:genus Found in bdq:sourceAuthority,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/49f1d386-5bed-43ae-bd43-deabf7df64fc,VALIDATION_DATEIDENTIFIED_NOTEMPTY,Validation dwc:dateIdentified Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/4daa7986-d9b0-4dd5-ad17-2d7a771ea71a,VALIDATION_COORDINATESTERRESTRIALWATER,Validation Coordinates Terrestrial Or Water,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/4eb48fdf-7299-4d63-9d08-246902e2857f,VALIDATION_FAMILY_NOTEMPTY,Validation dwc:family Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/4f2bf8fd-fc5c-493f-a44c-e7b16153c803,VALIDATION_DECIMALLATITUDE_INRANGE,Validation dwc:decimalLatitude In Range,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/5424e933-bee7-4125-839e-d8743ea69f93,VALIDATION_KINGDOM_NOTEMPTY,Validation dwc:kingdom Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/58486cb6-1114-4a8a-ba1e-bd89cfe887e9,VALIDATION_INFRASPECIFICEPITHET_NOTEMPTY,Validation dwc:infraspecificEpithet Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/5618f083-d55a-4ac2-92b5-b9fb227b832f,VALIDATION_DECIMALLATITUDE_NOTEMPTY,Validation dwc:decimalLatitude Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/66269bdd-9271-407a-9b06-4a5517b09d5e,VALIDATION_EVENTDATE_NOTEMPTY,Validation dwc:eventDate Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/69b2efdc-6269-45a4-aecb-4cb99c2ae134,VALIDATION_PHYLUM_FOUND,Validation dwc:phylum Found in bdq:sourceAuthority,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/6ce2b2b4-6afe-4d13-82a0-390d31ade01c,VALIDATION_SCIENTIFICNAMEAUTHORSHIP_NOTEMPTY,Validation dwc:scientificNameAuthorship Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/6eeac3ed-f691-457f-a42e-eaa9c8a71ce8,VALIDATION_EVENTDATE_STANDARD,Validation dwc:eventDate Standard,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/710fe118-17e1-440f-b428-88ba3f547d6d,VALIDATION_PHYLUM_NOTEMPTY,Validation dwc:phylum Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/7af25f1e-a4e2-4ff4-b161-d1f25a5c3e47,VALIDATION_GENUS_NOTEMPTY,Validation dwc:genus Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/7bdb13a4-8a51-4ee5-be7f-20693fdb9e2d,VALIDATION_YEAR_INRANGE,Validation dwc:year In Range,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/7c4b9498-a8d9-4ebb-85f1-9f200c788595,VALIDATION_COUNTRY_FOUND,Validation dwc:country Found in bdq:sourceAuthority,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/7d2485d5-1ba7-4f25-90cb-f4480ff1a275,VALIDATION_ORDER_FOUND,Validation dwc:order Found in bdq:sourceAuthority,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/7e0c0418-fe16-4a39-98bd-80e19d95b9d1,VALIDATION_DECIMALLONGITUDE_NOTEMPTY,Validation dwc:decimalLongitude Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/8f1e6e58-544b-4365-a569-fb781341644e,VALIDATION_TAXON_UNAMBIGUOUS,Validation dwc:Taxon Unambiguous,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/9a39d88c-7eee-46df-b32a-c109f9f81fb8,VALIDATION_SUBGENUS_NOTEMPTY,Validation dwc:subgenus Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/a6c927be-ecb5-4932-b5f4-9f67aca52a51,VALIDATION_ORDER_NOTEMPTY,Validation dwc:order Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/ac2b7648-d5f9-48ca-9b07-8ad5879a2536,VALIDATION_COUNTRYCODE_STANDARD,Validation dwc:countryCode Standard,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/b6ecda2a-cf36-426a-b2d0-a8ee2ef44b4f,VALIDATION_SPECIFICEPITHET_NOTEMPTY,Validation dwc:specificEpithet Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/c09ecbf9-34e3-4f3a-b74a-8093d3e99a23,VALIDATION_GEODETICDATUM_STANDARD,Validation dwc:geodeticDatum Standard,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/c486546c-e6e5-48a7-b286-efa6a01afe7b,VALIDATION_BASISOFRECORD_STANDARD,Validation dwc:basisOfRecord Standard,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/c6adf2ea-3051-4498-97f4-4b2f8a105f57,VALIDATION_ORDER_NOTEMPTY,Validation dwc:order Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/d708526b-6561-438e-aa1a-82cd80b06396,VALIDATION_BASISOFRECORD_NOTEMPTY,Validation dwc:basisOfRecord Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/dc8aae4b-134f-4d75-8a71-c4186239d349,VALIDATION_MONTH_NOTEMPTY,Validation dwc:month Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/e49b4df9-a79b-4c7e-a878-54e85e6ac9be,VALIDATION_STATEPROVINCE_FOUND,Validation dwc:stateProvince Found in bdq:sourceAuthority,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/eb4a17f6-6bea-4cdd-93dd-d5a7e9d1eccf,VALIDATION_COORDINATEUNCERTAINTYINMETERS_NOTEMPTY,Validation dwc:coordinateUncertaintyInMeters Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/f2ce7d55-5b1d-426a-b00e-6d4efe3058ec,VALIDATION_GEODETICDATUM_NOTEMPTY,Validation dwc:geodeticDatum Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/f9205977-f145-44f5-8cb2-e43490060915,VALIDATION_YEAR_NOTEMPTY,Validation dwc:year Not Empty,Validation,Completeness
+https://rs.tdwg.org/bdqtest/terms/fec5ffe6-3958-4312-82d9-ebcca0efb350,VALIDATION_COORDINATES_NOTZERO,Validation Coordinates Not Zero,Validation,Conformance
+https://rs.tdwg.org/bdqtest/terms/374b091a-fc90-4791-91e5-c1557c559d70,AMENDMENT_COORDINATES_FROM_VERBATIM,Amendment Coordinates From Verbatim,Amendment,Completeness
+https://rs.tdwg.org/bdqtest/terms/3c2590c7-af8a-4eb4-af57-5f73ba9d1f8e,AMENDMENT_GEODETICDATUM_ASSUMEDDEFAULT,Amendment dwc:geodeticDatum AssumedDefault,Amendment,Completeness
+https://rs.tdwg.org/bdqtest/terms/56b6c695-adf1-418e-def2-2b6248b86c26,AMENDMENT_EVENTDATE_STANDARDIZED,Amendment dwc:eventDate Standardized,Amendment,Conformance
+https://rs.tdwg.org/bdqtest/terms/b129fa4d-b25b-43f7-9645-5ed4d44b357b,AMENDMENT_SCIENTIFICNAME_FROM_TAXONID,Amendment dwc:scientificName From dwc:taxonID,Amendment,Completeness
+https://rs.tdwg.org/bdqtest/terms/45fb49eb-4a1b-4b49-876f-15d5034dfc73,AMENDMENT_COUNTRYCODE_FROM_COORDINATES,Amendment dwc:countryCode From Coordinates,Amendment,Completeness
+https://rs.tdwg.org/bdqtest/terms/bd385eeb-44a2-464b-a503-7abe407ef904,MEASURE_EVENTDATE_DURATIONINSECONDS,Measure dwc:eventDate Duration In Seconds,Measure,Resolution
+https://rs.tdwg.org/bdqtest/terms/56b6c695-adf1-418e-def2-2b6248b86c27,MEASURE_COMPLETENESS_ALLVALIDATIONS,Measure Completeness of All Validations,Measure,Completeness

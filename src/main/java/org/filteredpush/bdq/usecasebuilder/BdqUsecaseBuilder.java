@@ -8,9 +8,11 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.jena.rdf.model.Model;
+import org.filteredpush.bdq.usecasebuilder.ui.WizardFrame;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.swing.SwingUtilities;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,6 +29,7 @@ import java.util.List;
  *   java -jar bdq-usecase-builder.jar [OPTIONS]
  *
  *   Options:
+ *     --gui                   Launch the Swing wizard UI (Phase 1)
  *     -c, --config &lt;file&gt;     Path to configuration file (default: config.properties)
  *     -i, --input &lt;file|IRI&gt;  Additional RDF inputs (may be repeated)
  *     -o, --output &lt;file&gt;     Output file path (default: usecase-output.ttl)
@@ -54,6 +57,16 @@ public class BdqUsecaseBuilder {
 
             if (cmd.hasOption("help")) {
                 formatter.printHelp("bdq-usecase-builder", options, true);
+                return;
+            }
+
+            // --gui flag launches the Swing wizard (Phase 1)
+            if (cmd.hasOption("gui")) {
+                SwingUtilities.invokeLater(() -> {
+                    WizardFrame wizardFrame = new WizardFrame();
+                    wizardFrame.setVisible(true);
+                    wizardFrame.startWizard();
+                });
                 return;
             }
 
@@ -142,6 +155,11 @@ public class BdqUsecaseBuilder {
         options.addOption(Option.builder("h")
                 .longOpt("help")
                 .desc("Print this help message and exit")
+                .build());
+
+        options.addOption(Option.builder()
+                .longOpt("gui")
+                .desc("Launch the Swing wizard UI (Phase 1)")
                 .build());
 
         return options;
