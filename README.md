@@ -34,11 +34,11 @@ java -jar target/bdq-usecase-builder-*-SNAPSHOT.jar --gui
 
 The wizard will open a desktop window and guide you through:
 
-1. **Welcome / Project Setup** – choose an output directory for the exported files.
+1. **Welcome / Project Setup** – default output is `output/` under the launch directory; review or change it.
 2. **Define Use Case** – provide a name, description, and fitness-for-use requirements.
-3. **Information Elements** – add and categorise the Darwin Core terms your use case relies on (ActedUpon or Consulted).
+3. **Information Elements** – pick and categorise Darwin Core, Audiovisual Core, and custom vocabulary terms (ActedUpon or Consulted).
 4. **Select Existing Tests** – browse and search the bundled BDQ test catalog; tick the tests relevant to your use case.
-5. **Define New Tests** – author new BDQ test drafts with labels, types, dimensions, and expected response text.
+5. **Define New Tests** – author new BDQ test drafts with controlled-vocabulary picklists for dimensions, criteria/enhancements, bdqval defaults, and bdquc references.
 6. **Review & Export** – review a summary of everything and export the output files.
 
 Clicking **Finish** or **Export Now** on the last page writes two files to your chosen output directory:
@@ -69,22 +69,26 @@ Options:
 
 ---
 
-## Phase 1 scope
+## Phase 2 scope
 
-The Swing wizard UI shipped in this release covers Phase 1 of the planned roadmap.
+The Swing wizard UI now includes the Phase 1 baseline plus Phase 2 enhancements.
 
-### What is included in Phase 1
+### What is included
 
 - Swing wizard shell with card-based page navigation (Back / Next / Finish / Cancel).
 - All six wizard pages listed above.
+- Output directory defaults to `<launch-directory>/output` and can be changed in the welcome page.
 - In-memory domain model: `ProjectState`, `UseCaseDraft`, `InformationElementRef`, `TestDraft`.
 - Enumerations: `TestType`, `InfoElementRole`, `ResourceType`.
 - `ValidationService` – required-field checks for each page.
 - `ExportService` – writes a Markdown summary and a JSON state file.
 - `TestCatalogService` + bundled CSV catalog of representative BDQ tests for the selection page.
+- `VocabularyService` + bundled local controlled vocabularies: `bdqdim`, `bdqcrit`, `bdqenh`, `bdqval`, `bdquc`, `dwc`, `ac`.
+- Information-element picker supports Darwin Core, Audiovisual Core, and user-configurable custom vocabularies.
+- Expanded contextual guidance text/tooltips on each wizard page (what, why, conventions).
 - Unit tests for model, validation, and export services.
 
-### What is not yet in Phase 1 (planned for later phases)
+### Still planned for later phases
 
 - Gap analysis matrix (requirement ↔ test coverage).
 - Structured expected-response clause builder (if/then/otherwise DSL).
@@ -93,6 +97,22 @@ The Swing wizard UI shipped in this release covers Phase 1 of the planned roadma
 - RDF/Turtle export.
 - Richer ontology validation.
 - Refresh of the test catalog from a remote source.
+
+## Custom vocabulary configuration
+
+You can add local, user-specific vocabulary picklists for the information-element step.
+
+1. Edit (or create) `vocab/custom-vocabularies.properties` in your launch/working directory.
+2. Add one property per vocabulary using comma-separated qualified terms:
+
+```properties
+myvocab=myvocab:termOne,myvocab:termTwo
+institution=inst:collectionCode,inst:recordQuality
+```
+
+3. Restart the wizard; these terms are merged into the information-element term picker.
+
+The repository includes a starter file at `vocab/custom-vocabularies.properties`.
 
 ---
 
@@ -118,6 +138,7 @@ src/main/java/org/filteredpush/bdq/usecasebuilder/
   service/
     ValidationService.java
     ExportService.java
+    VocabularyService.java
   catalog/
     TestCatalogEntry.java
     TestCatalogService.java
@@ -134,6 +155,7 @@ src/main/java/org/filteredpush/bdq/usecasebuilder/
       ReviewExportPage.java
 src/main/resources/
   catalog/bdqtest_catalog.csv     Bundled BDQ test catalog
+  catalog/vocabulary/*.csv        Bundled controlled vocabulary picklists
 ```
 
 ---

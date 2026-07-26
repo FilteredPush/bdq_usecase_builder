@@ -39,6 +39,7 @@ public class ValidationServiceTest {
     @Test
     public void testValidateWelcomePageMissingDir() {
         ProjectState state = new ProjectState();
+        state.setOutputDirectory(null);
         List<String> errors = service.validateWelcomePage(state);
         assertFalse(errors.isEmpty());
         assertTrue(errors.get(0).toLowerCase().contains("output directory"));

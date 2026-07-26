@@ -81,9 +81,10 @@ public class UseCasePage extends WizardPage {
 
         JLabel intro = new JLabel(
                 "<html><b>Define your use case.</b> "
-                        + "A use case describes the purpose and context for a set of data quality tests. "
-                        + "Provide a concise name and then describe the fitness-for-use requirements "
-                        + "that the tests must satisfy.</html>");
+                        + "What: the purpose and context for a set of data quality tests.<br>"
+                        + "Why: this anchors which information elements and test assertions matter.<br>"
+                        + "Convention: keep names concise, describe scope in prose, and express "
+                        + "fitness requirements as practical, testable statements.</html>");
         add(intro, BorderLayout.NORTH);
 
         JLabel introLabel = new JLabel(

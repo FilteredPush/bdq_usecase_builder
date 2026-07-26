@@ -75,6 +75,10 @@ public class WelcomePage extends WizardPage {
         // Welcome text
         JLabel welcomeLabel = new JLabel(
                 "<html><h2>Welcome to the BDQ Use Case Builder</h2>"
+                        + "<p>What: capture a BDQ use-case package (scope, terms, tests, and export).</p>"
+                        + "<p>Why: a consistent package makes test implementation and review easier.</p>"
+                        + "<p>Convention: output defaults to <tt>output/</tt> under your current launch directory "
+                        + "and can be changed below.</p>"
                         + "<p>This wizard will guide you through:</p>"
                         + "<ul>"
                         + "<li>Defining a BDQ use case</li>"
@@ -118,6 +122,9 @@ public class WelcomePage extends WizardPage {
         browseButton.addActionListener(e -> {
             JFileChooser chooser = new JFileChooser();
             chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            if (!outputDirField.getText().trim().isEmpty()) {
+                chooser.setCurrentDirectory(new java.io.File(outputDirField.getText().trim()));
+            }
             if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
                 outputDirField.setText(chooser.getSelectedFile().getAbsolutePath());
             }

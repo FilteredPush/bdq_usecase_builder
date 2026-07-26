@@ -2,6 +2,7 @@ package org.filteredpush.bdq.usecasebuilder.ui;
 
 import org.filteredpush.bdq.usecasebuilder.catalog.TestCatalogService;
 import org.filteredpush.bdq.usecasebuilder.model.ProjectState;
+import org.filteredpush.bdq.usecasebuilder.service.VocabularyService;
 import org.filteredpush.bdq.usecasebuilder.ui.pages.ExistingTestsPage;
 import org.filteredpush.bdq.usecasebuilder.ui.pages.InformationElementsPage;
 import org.filteredpush.bdq.usecasebuilder.ui.pages.NewTestPage;
@@ -114,13 +115,15 @@ public class WizardFrame extends JFrame {
         ProjectState state = new ProjectState();
         TestCatalogService catalogService = new TestCatalogService();
         catalogService.loadCatalog();
+        VocabularyService vocabularyService = new VocabularyService();
+        vocabularyService.load();
 
         List<WizardPage> pages = new ArrayList<>();
         pages.add(new WelcomePage(state));
         pages.add(new UseCasePage(state));
-        pages.add(new InformationElementsPage(state));
+        pages.add(new InformationElementsPage(state, vocabularyService));
         pages.add(new ExistingTestsPage(state, catalogService));
-        pages.add(new NewTestPage(state));
+        pages.add(new NewTestPage(state, vocabularyService));
         pages.add(new ReviewExportPage(state));
 
         for (int i = 0; i < pages.size(); i++) {

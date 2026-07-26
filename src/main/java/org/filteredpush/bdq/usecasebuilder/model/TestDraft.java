@@ -6,7 +6,8 @@ package org.filteredpush.bdq.usecasebuilder.model;
  *
  * <p>Captures the minimal set of descriptors needed for Phase 1: label
  * anatomy, preferred label, test type, resource type, dimension,
- * criterion/enhancement, and the expected response narrative.</p>
+ * criterion/enhancement, and the expected response narrative. Phase 2 extends
+ * this with optional use-case references and parameter/default descriptors.</p>
  */
 public class TestDraft {
 
@@ -16,6 +17,8 @@ public class TestDraft {
     private ResourceType resourceType;
     private String dimension;
     private String criterionOrEnhancement;
+    private String useCaseReference;
+    private String parameterDefaults;
     private String expectedResponse;
     private String notes;
 
@@ -94,6 +97,26 @@ public class TestDraft {
     /** Sets the criterion or enhancement descriptor. */
     public void setCriterionOrEnhancement(String criterionOrEnhancement) {
         this.criterionOrEnhancement = criterionOrEnhancement;
+    }
+
+    /** Returns an optional reference to a BDQ use-case concept (bdquc). */
+    public String getUseCaseReference() {
+        return useCaseReference;
+    }
+
+    /** Sets the optional use-case reference descriptor. */
+    public void setUseCaseReference(String useCaseReference) {
+        this.useCaseReference = useCaseReference;
+    }
+
+    /** Returns optional parameter/default profile text for this draft. */
+    public String getParameterDefaults() {
+        return parameterDefaults;
+    }
+
+    /** Sets optional parameter/default profile text. */
+    public void setParameterDefaults(String parameterDefaults) {
+        this.parameterDefaults = parameterDefaults;
     }
 
     /**

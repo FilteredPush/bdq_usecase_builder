@@ -3,6 +3,7 @@ package org.filteredpush.bdq.usecasebuilder.model;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.nio.file.Paths;
 
 /**
  * Central in-memory state object that accumulates all authoring inputs across
@@ -24,6 +25,7 @@ public class ProjectState {
     /** Creates an empty project state. */
     public ProjectState() {
         this.useCaseDraft = new UseCaseDraft();
+        this.outputDirectory = Paths.get(System.getProperty("user.dir"), "output").toString();
     }
 
     // -----------------------------------------------------------------------

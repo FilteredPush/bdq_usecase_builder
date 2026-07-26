@@ -52,7 +52,7 @@ public class ExportService {
 
         String dir = state.getOutputDirectory();
         if (dir == null || dir.trim().isEmpty()) {
-            dir = ".";
+            dir = "output";
         }
 
         File outputDir = new File(dir);
@@ -152,6 +152,8 @@ public class ExportService {
                     pw.println("- **Dimension:** " + nvl(td.getDimension()));
                     pw.println("- **Criterion/Enhancement:** "
                             + nvl(td.getCriterionOrEnhancement()));
+                    pw.println("- **Use-case reference:** " + nvl(td.getUseCaseReference()));
+                    pw.println("- **Parameters/defaults:** " + nvl(td.getParameterDefaults()));
                     pw.println();
                     pw.println("**Expected Response:**");
                     pw.println();
@@ -220,6 +222,8 @@ public class ExportService {
                     td.getResourceType() != null ? td.getResourceType().name() : null);
             testMap.put("dimension", td.getDimension());
             testMap.put("criterionOrEnhancement", td.getCriterionOrEnhancement());
+            testMap.put("useCaseReference", td.getUseCaseReference());
+            testMap.put("parameterDefaults", td.getParameterDefaults());
             testMap.put("expectedResponse", td.getExpectedResponse());
             testMap.put("notes", td.getNotes());
             testList.add(testMap);

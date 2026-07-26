@@ -84,6 +84,8 @@ public class ExportServiceTest {
         String content = new String(Files.readAllBytes(mdFile.toPath()));
         assertTrue(content.contains("VALIDATION_SCINAME_NOTEMPTY"),
                 "Markdown should include new test label");
+        assertTrue(content.contains("UseCase"),
+                "Markdown should include use-case reference");
     }
 
     // -----------------------------------------------------------------------
@@ -121,6 +123,8 @@ public class ExportServiceTest {
         String content = new String(Files.readAllBytes(jsonFile.toPath()));
         assertTrue(content.contains("VALIDATION_SCINAME_NOTEMPTY"),
                 "JSON should include new test label");
+        assertTrue(content.contains("parameterDefaults"),
+                "JSON should include parameter/defaults field");
     }
 
     @Test
@@ -152,6 +156,8 @@ public class ExportServiceTest {
         draft.setPrefLabel("Scientific name not empty");
         draft.setType(TestType.VALIDATION);
         draft.setDimension("Completeness");
+        draft.setUseCaseReference("UseCase");
+        draft.setParameterDefaults("COMPLIANT");
         draft.setExpectedResponse("COMPLIANT if dwc:scientificName is not empty; otherwise NOT_COMPLIANT");
         state.addNewTestDraft(draft);
 

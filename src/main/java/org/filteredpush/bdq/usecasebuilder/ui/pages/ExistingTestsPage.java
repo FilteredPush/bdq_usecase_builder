@@ -86,6 +86,9 @@ public class ExistingTestsPage extends WizardPage {
 
         JLabel intro = new JLabel(
                 "<html><b>Select existing BDQ tests</b> to include in your use case.<br>"
+                        + "What: reuse tests already defined in the BDQ catalog.<br>"
+                        + "Why: reuse improves consistency and reduces duplicate test authoring.<br>"
+                        + "Convention: prefer established tests when they match your requirement/dimension.<br>"
                         + "Use the search box to filter by label, type, or dimension. "
                         + "Check the box next to each test you want to include.</html>");
         add(intro, BorderLayout.NORTH);

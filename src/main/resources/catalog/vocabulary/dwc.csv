@@ -1,0 +1,11 @@
+term
+dwc:scientificName
+dwc:taxonRank
+dwc:kingdom
+dwc:family
+dwc:genus
+dwc:specificEpithet
+dwc:eventDate
+dwc:decimalLatitude
+dwc:decimalLongitude
+dwc:countryCode
