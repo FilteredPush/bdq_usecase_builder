@@ -51,8 +51,14 @@ public class TurtleExportService {
 
     /** Namespace for default information-element fallback. */
     static final String DWC_NS = "http://rs.tdwg.org/dwc/terms/";
+    /**
+     * Splits plain-text fitness requirements into list items when no explicit
+     * {@code <li>} tags are present.
+     */
     private static final Pattern FITNESS_SPLIT_PATTERN =
             Pattern.compile("(?:\\n+|\\s*[;•]+\\s*|\\s+-\\s+|\\.\\s+)");
+    private static final Pattern LI_TAG_PATTERN =
+            Pattern.compile("(?is)<li[^>]*>(.*?)</li>");
 
     private static final Set<String> ALLOWED_BDQ_PROPERTIES = Set.of(
             BdqFfdq.hasUseCase.getURI(),
@@ -332,7 +338,7 @@ public class TurtleExportService {
         String source = raw.replace("\r", "\n");
         List<String> items = new ArrayList<>();
 
-        Matcher liMatcher = Pattern.compile("(?is)<li[^>]*>(.*?)</li>").matcher(source);
+        Matcher liMatcher = LI_TAG_PATTERN.matcher(source);
         while (liMatcher.find()) {
             String text = stripTags(liMatcher.group(1));
             if (!isBlank(text)) {
@@ -489,6 +495,7 @@ public class TurtleExportService {
             UUID.fromString(iri.substring(URN_UUID_PREFIX.length()));
             return true;
         } catch (IllegalArgumentException e) {
+            logger.debug("Invalid urn:uuid identifier encountered: {}", iri);
             return false;
         }
     }
