@@ -61,6 +61,7 @@ public class TurtleExportService {
             Pattern.compile("(?:\\n+|\\s*[;•]+\\s*|\\s+-\\s+)");
     private static final Pattern LI_TAG_PATTERN =
             Pattern.compile("(?is)<li[^>]*>(.*?)</li>");
+    private static final int MAX_SPECIFICATION_EXAMPLES = 2;
 
     private static final Set<String> ALLOWED_BDQ_PROPERTIES = Set.of(
             BdqFfdq.hasUseCase.getURI(),
@@ -297,7 +298,7 @@ public class TurtleExportService {
         if (!isBlank(description)) {
             specRes.addProperty(DCTerms.description, description);
         }
-        for (String example : buildSpecificationExamples(td, 2)) {
+        for (String example : buildSpecificationExamples(td, MAX_SPECIFICATION_EXAMPLES)) {
             specRes.addProperty(SKOS.example, example);
         }
 
@@ -378,7 +379,7 @@ public class TurtleExportService {
                         || "Response.comment".equals(key)) {
                     return;
                 }
-                inputs.add(key + "=\"" + collapseWhitespace(value).replace("\"", "\\\"") + "\"");
+                inputs.add(key + "=\"" + escapeQuotes(collapseWhitespace(value)) + "\"");
             });
             if (inputs.isEmpty()) {
                 continue;
@@ -392,7 +393,7 @@ public class TurtleExportService {
             }
             if (!isBlank(values.get("Response.comment"))) {
                 sb.append(", Response.comment=\"")
-                        .append(collapseWhitespace(values.get("Response.comment")).replace("\"", "\\\""))
+                        .append(escapeQuotes(collapseWhitespace(values.get("Response.comment"))))
                         .append("\"");
             }
             examples.add(sb.toString());
@@ -635,6 +636,10 @@ public class TurtleExportService {
 
     private static String collapseWhitespace(String s) {
         return s == null ? "" : s.replaceAll("\\s+", " ").trim();
+    }
+
+    private static String escapeQuotes(String s) {
+        return s == null ? "" : s.replace("\"", "\\\"");
     }
 
     /**
