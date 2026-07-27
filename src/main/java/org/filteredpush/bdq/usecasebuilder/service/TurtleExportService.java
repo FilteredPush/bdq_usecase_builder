@@ -364,7 +364,7 @@ public class TurtleExportService {
      * <p>Only rows with {@code Response.status=RUN_HAS_RESULT} are included.
      * Each example is serialized as:
      * {@code input1="value1", input2="value2": Response.status=..., Response.result=..., Response.comment="..."}.
-     * Rows without non-response input values are ignored.</p>
+     * Rows are skipped when they have no non-response input values after filtering.</p>
      */
     private List<String> buildSpecificationExamples(TestDraft td, int maxExamples) {
         List<String> examples = new ArrayList<>();
@@ -490,7 +490,10 @@ public class TurtleExportService {
 
         StringBuilder sb = new StringBuilder();
         if (!isBlank(leadingText)) {
-            sb.append(collapseWhitespace(leadingText)).append(' ');
+            sb.append(collapseWhitespace(leadingText));
+        }
+        if (sb.length() > 0) {
+            sb.append(' ');
         }
         sb.append("<ul>");
         for (String item : items) {

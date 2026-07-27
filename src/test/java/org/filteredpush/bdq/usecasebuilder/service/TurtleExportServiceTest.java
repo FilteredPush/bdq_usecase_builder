@@ -268,8 +268,11 @@ class TurtleExportServiceTest {
 
         List<RDFNode> examples = model.listObjectsOfProperty(spec, SKOS.example).toList();
         assertEquals(2, examples.size(), "Only rows with Response.status=RUN_HAS_RESULT should become examples");
-        assertTrue(examples.get(0).asLiteral().getString().contains("Response.status=RUN_HAS_RESULT"));
-        assertTrue(examples.get(1).asLiteral().getString().contains("Response.status=RUN_HAS_RESULT"));
+        List<String> exampleTexts = examples.stream().map(x -> x.asLiteral().getString()).toList();
+        assertTrue(exampleTexts.stream().anyMatch(x -> x.contains("dwc:month=\"10\"")));
+        assertTrue(exampleTexts.stream().anyMatch(x -> x.contains("dwc:month is in range")));
+        assertTrue(exampleTexts.stream().anyMatch(x -> x.contains("dwc:month=\"v\"")));
+        assertTrue(exampleTexts.stream().anyMatch(x -> x.contains("dwc:month is ambiguous as \\\"v\\\" or \\\"5\\\"")));
         assertFalse(examples.stream().anyMatch(x -> x.asLiteral().getString().contains("PREREQUISITES_NOT_MET")));
     }
 
