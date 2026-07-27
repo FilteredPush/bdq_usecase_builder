@@ -51,6 +51,8 @@ public class TurtleExportService {
 
     /** Namespace for default information-element fallback. */
     static final String DWC_NS = "http://rs.tdwg.org/dwc/terms/";
+    private static final Pattern FITNESS_SPLIT_PATTERN =
+            Pattern.compile("(?:\\n+|\\s*[;•]+\\s*|\\s+-\\s+|\\.\\s+)");
 
     private static final Set<String> ALLOWED_BDQ_PROPERTIES = Set.of(
             BdqFfdq.hasUseCase.getURI(),
@@ -340,7 +342,8 @@ public class TurtleExportService {
 
         if (items.isEmpty()) {
             String noTags = stripTags(source);
-            for (String part : noTags.split("(?:\\n+|\\s*[;•]+\\s*|\\s+-\\s+|\\.\\s+)", -1)) {
+            // Split plain text into list items by newlines, bullets, semicolons, hyphens, or sentence breaks.
+            for (String part : FITNESS_SPLIT_PATTERN.split(noTags, -1)) {
                 String cleaned = collapseWhitespace(part);
                 if (!isBlank(cleaned)) {
                     items.add(cleaned);
@@ -364,13 +367,10 @@ public class TurtleExportService {
         if (value == null) {
             return "";
         }
-        return collapseWhitespace(value.replaceAll("(?is)</?(?!ul\\b|li\\b)[^>]+>", " ")
-                .replaceAll("(?is)<ul[^>]*>", "<ul>")
-                .replaceAll("(?is)<li[^>]*>", "<li>")
-                .replace("<ul>", " ")
-                .replace("</ul>", " ")
-                .replace("<li>", " ")
-                .replace("</li>", " "));
+        return collapseWhitespace(value
+                .replaceAll("(?is)</?(?!ul\\b|li\\b)[^>]+>", " ")
+                .replaceAll("(?is)</?ul[^>]*>", " ")
+                .replaceAll("(?is)</?li[^>]*>", " "));
     }
 
     private String buildSpecificationText(List<ExpectedResponseClause> clauses) {
