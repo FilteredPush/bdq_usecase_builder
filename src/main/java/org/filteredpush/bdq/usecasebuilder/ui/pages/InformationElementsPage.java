@@ -59,6 +59,7 @@ public class InformationElementsPage extends WizardPage {
     /** Full sorted list of terms, used for autocomplete filtering. */
     private List<String> allTerms = new ArrayList<>();
     private boolean updatingCombo = false;
+    private static final int MAX_AUTOCOMPLETE_RESULTS = 50;
 
     /**
      * Creates the information elements page.
@@ -205,7 +206,7 @@ public class InformationElementsPage extends WizardPage {
         for (String term : allTerms) {
             if (term.toLowerCase(Locale.ROOT).contains(lower)) {
                 filtered.add(term);
-                if (filtered.size() >= 50) {
+                if (filtered.size() >= MAX_AUTOCOMPLETE_RESULTS) {
                     break;
                 }
             }

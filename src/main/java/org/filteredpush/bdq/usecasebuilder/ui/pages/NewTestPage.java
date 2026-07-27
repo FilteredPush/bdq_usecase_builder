@@ -97,6 +97,7 @@ public class NewTestPage extends WizardPage {
     private static final Set<String> PREREQUISITE_STATUSES = Set.of(
             "INTERNAL_PREREQUISITES_NOT_MET",
             "EXTERNAL_PREREQUISITES_NOT_MET");
+    private static final float IE_BUTTON_FONT_SIZE = 11.0f;
 
     /**
      * Creates the new test definition page.
@@ -373,18 +374,19 @@ public class NewTestPage extends WizardPage {
         criterionCombo.addActionListener(e -> applySuggestions());
 
         // Track manual label edits to suppress further auto-suggestions
-        labelField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { onLabelManualEdit(); }
-            @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { onLabelManualEdit(); }
-            @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { onLabelManualEdit(); }
-        });
-        prefLabelField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { onPrefLabelManualEdit(); }
-            @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { onPrefLabelManualEdit(); }
-            @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { onPrefLabelManualEdit(); }
-        });
+        labelField.getDocument().addDocumentListener(makeDocumentListener(this::onLabelManualEdit));
+        prefLabelField.getDocument().addDocumentListener(makeDocumentListener(this::onPrefLabelManualEdit));
 
         return testDetailsPanel;
+    }
+
+    /** Creates a simple DocumentListener that calls the given runnable on any change. */
+    private static javax.swing.event.DocumentListener makeDocumentListener(Runnable action) {
+        return new javax.swing.event.DocumentListener() {
+            @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { action.run(); }
+            @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { action.run(); }
+            @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { action.run(); }
+        };
     }
 
     private void addRow(JPanel form, String labelText, java.awt.Component field, int gridy) {
@@ -678,7 +680,7 @@ public class NewTestPage extends WizardPage {
         // bdqval terms first
         for (String val : List.of("bdqval:Empty", "bdqval:NotEmpty")) {
             JButton b = new JButton(val);
-            b.setFont(b.getFont().deriveFont(11.0f));
+            b.setFont(b.getFont().deriveFont(IE_BUTTON_FONT_SIZE));
             b.setToolTipText("Append \"" + val + "\" to the IF condition");
             final String token = val;
             b.addActionListener(e -> appendToCondition(token));
@@ -691,7 +693,7 @@ public class NewTestPage extends WizardPage {
                 continue;
             }
             JButton b = new JButton(qname.trim());
-            b.setFont(b.getFont().deriveFont(11.0f));
+            b.setFont(b.getFont().deriveFont(IE_BUTTON_FONT_SIZE));
             b.setToolTipText("Append \"" + qname.trim() + "\" to the IF condition");
             final String token = qname.trim();
             b.addActionListener(e -> appendToCondition(token));
