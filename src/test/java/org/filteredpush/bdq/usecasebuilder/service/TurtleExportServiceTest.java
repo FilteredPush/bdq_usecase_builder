@@ -6,11 +6,15 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.vocabulary.RDF;
+import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.RDFS;
+import org.apache.jena.vocabulary.SKOS;
 import org.filteredpush.bdq.usecasebuilder.model.AuthorityDefault;
+import org.filteredpush.bdq.usecasebuilder.model.ConformanceRow;
 import org.filteredpush.bdq.usecasebuilder.model.ExpectedResponseClause;
 import org.filteredpush.bdq.usecasebuilder.model.InfoElementRole;
 import org.filteredpush.bdq.usecasebuilder.model.InformationElementRef;
+import org.filteredpush.bdq.usecasebuilder.model.ParameterDefinition;
 import org.filteredpush.bdq.usecasebuilder.model.ProjectState;
 import org.filteredpush.bdq.usecasebuilder.model.TestDraft;
 import org.filteredpush.bdq.usecasebuilder.model.TestType;
@@ -160,12 +164,16 @@ class TurtleExportServiceTest {
     void hasFitnessRequirementsIsSingleLineUlLiOnly() {
         ProjectState state = buildSampleState();
         state.getUseCaseDraft().setFitnessRequirementsText(
-                "<p>First requirement</p>\nSecond requirement <b>with formatting</b>\n<li>Third</li>");
+                "Data are fit for use for HasSpecies if they have identifications to known species.\n"
+                        + "\n<li>Taxon is known to an authority</li>\n"
+                        + "<li>Taxon Rank is species or better</li>\n");
 
         Model model = service.buildModel(state, false, null);
         Resource useCase = model.listSubjectsWithProperty(RDF.type, BdqFfdq.UseCase).next();
         String value = model.getProperty(useCase, BdqFfdq.hasFitnessRequirements).getObject().asLiteral().getString();
 
+        assertTrue(value.startsWith("Data are fit for use for HasSpecies if they have identifications to known species."),
+                "Leading prose should be preserved as plain text");
         assertTrue(value.contains("<ul>") && value.contains("<li>"));
         assertFalse(value.contains("\n") || value.contains("\r"), "hasFitnessRequirements must be single-line");
         assertFalse(value.matches("(?is).*</?(?!ul\\b|li\\b)[a-z][^>]*>.*"),
@@ -204,6 +212,65 @@ class TurtleExportServiceTest {
         assertFalse(ttl.contains("includesInPolicy"));
         assertFalse(ttl.contains("hasDimension"));
         assertFalse(ttl.contains("hasInformationElement"));
+    }
+
+    @Test
+    void specificationIncludesDescriptionExamplesAndMethodLabels() {
+        ProjectState state = buildSampleState();
+        TestDraft draft = state.getNewTestDrafts().get(0);
+        draft.setExpectedResponse(
+                "COMPLIANT if dwc:month is in range; NOT_COMPLIANT if dwc:month is ambiguous");
+        draft.setExpectedResponseClauses(List.of());
+        draft.setParameterDefaults("{bdqval:sourceAuthority = \"DCMI Type Vocabulary\"}");
+
+        AuthorityDefault authority = new AuthorityDefault();
+        authority.setIdentifier("bdqval:sourceAuthority");
+        authority.setAuthorityUri("http://purl.org/dc/terms/DCMIType");
+        draft.setAuthorityDefaults(List.of(authority));
+
+        ParameterDefinition parameter = new ParameterDefinition();
+        parameter.setName("bdqval:sourceAuthority");
+        parameter.setDatatype("string");
+        parameter.setNotes("DCMI Type Vocabulary List of Terms");
+        draft.setParameterDefinitions(List.of(parameter));
+
+        ConformanceRow row1 = new ConformanceRow();
+        row1.put("dwc:month", "10");
+        row1.put("Response.status", "RUN_HAS_RESULT");
+        row1.put("Response.result", "COMPLIANT");
+        row1.put("Response.comment", "dwc:month is in range");
+        ConformanceRow row2 = new ConformanceRow();
+        row2.put("dwc:month", "v");
+        row2.put("Response.status", "RUN_HAS_RESULT");
+        row2.put("Response.result", "NOT_COMPLIANT");
+        row2.put("Response.comment", "dwc:month is ambiguous as \"v\" or \"5\"");
+        ConformanceRow prereq = new ConformanceRow();
+        prereq.put("dwc:month", "");
+        prereq.put("Response.status", "INTERNAL_PREREQUISITES_NOT_MET");
+        prereq.put("Response.result", "");
+        prereq.put("Response.comment", "missing value");
+        draft.setConformanceRows(List.of(prereq, row1, row2));
+
+        Model model = service.buildModel(state, false, null);
+
+        Resource method = model.listSubjectsWithProperty(BdqFfdq.hasSpecification).next();
+        Resource spec = model.listObjectsOfProperty(method, BdqFfdq.hasSpecification).next().asResource();
+
+        assertEquals("Specification for: " + draft.getLabel(),
+                model.getProperty(spec, RDFS.label).getObject().asLiteral().getString());
+        assertTrue(model.contains(method, RDFS.label, (RDFNode) null));
+        assertTrue(model.contains(method, SKOS.prefLabel, (RDFNode) null));
+
+        String description = model.getProperty(spec, DCTerms.description).getObject().asLiteral().getString();
+        assertTrue(description.contains(draft.getExpectedResponse()));
+        assertTrue(description.contains("bdqval:sourceAuthority"));
+        assertTrue(description.contains("DCMI Type Vocabulary List of Terms"));
+
+        List<RDFNode> examples = model.listObjectsOfProperty(spec, SKOS.example).toList();
+        assertEquals(2, examples.size(), "Only non-prerequisite RUN_HAS_RESULT rows should become examples");
+        assertTrue(examples.get(0).asLiteral().getString().contains("Response.status=RUN_HAS_RESULT"));
+        assertTrue(examples.get(1).asLiteral().getString().contains("Response.status=RUN_HAS_RESULT"));
+        assertFalse(examples.stream().anyMatch(x -> x.asLiteral().getString().contains("PREREQUISITES_NOT_MET")));
     }
 
     private void assertNeedMethodSpecificationChain(

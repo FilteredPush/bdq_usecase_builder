@@ -5,6 +5,7 @@ import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.RDF;
+import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.SKOS;
 import org.filteredpush.bdq.usecasebuilder.catalog.TestCatalogService;
@@ -25,6 +26,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -284,18 +286,121 @@ public class TurtleExportService {
         String specSeed = "spec:" + expectedResponse + ":" + normalizeSeed(td.getLabel());
         Resource specRes = model.createResource(stableUrnUuid(specSeed));
         addBdqType(specRes, BdqFfdq.Specification);
-        specRes.addProperty(RDFS.label, expectedResponse);
+        specRes.addProperty(RDFS.label, "Specification for: " + testDisplayLabel(td));
         addBdqLiteral(specRes, BdqFfdq.hasExpectedResponse, expectedResponse);
 
         String authoritiesDefaults = buildAuthoritiesDefaultsText(td);
         if (!isBlank(authoritiesDefaults)) {
             addBdqLiteral(specRes, BdqFfdq.hasAuthoritiesDefaults, authoritiesDefaults);
         }
+        String description = buildSpecificationDescription(td, expectedResponse, authoritiesDefaults);
+        if (!isBlank(description)) {
+            specRes.addProperty(DCTerms.description, description);
+        }
+        for (String example : buildSpecificationExamples(td, 2)) {
+            specRes.addProperty(SKOS.example, example);
+        }
 
         Resource methodRes = model.createResource(stableUrnUuid("method:" + specSeed));
         addBdqType(methodRes, methodTypeResource(td.getType()));
+        String methodLabel = "Method for: " + testDisplayLabel(td);
+        methodRes.addProperty(RDFS.label, methodLabel);
+        methodRes.addProperty(SKOS.prefLabel, methodLabel);
         addBdqResource(methodRes, forNeedProperty(td.getType()), testRes);
         addBdqResource(methodRes, BdqFfdq.hasSpecification, specRes);
+    }
+
+    private String buildSpecificationDescription(
+            TestDraft td,
+            String expectedResponse,
+            String authoritiesDefaults) {
+        List<String> parts = new ArrayList<>();
+        if (!isBlank(expectedResponse)) {
+            parts.add(expectedResponse.trim());
+        }
+        if (!isBlank(authoritiesDefaults)) {
+            parts.add(authoritiesDefaults.trim());
+        }
+        String parameters = buildParametersText(td);
+        if (!isBlank(parameters)) {
+            parts.add(parameters.trim());
+        }
+        return parts.isEmpty() ? null : String.join(" ", parts);
+    }
+
+    private String buildParametersText(TestDraft td) {
+        List<String> chunks = new ArrayList<>();
+        if (!isBlank(td.getParameterDefaults())) {
+            chunks.add(td.getParameterDefaults().trim());
+        }
+        td.getParameterDefinitions().forEach(parameter -> {
+            if (parameter == null) {
+                return;
+            }
+            List<String> parts = new ArrayList<>();
+            if (!isBlank(parameter.getName())) {
+                parts.add(parameter.getName().trim());
+            }
+            if (!isBlank(parameter.getDatatype())) {
+                parts.add("datatype=" + parameter.getDatatype().trim());
+            }
+            if (!isBlank(parameter.getDefaultAuthorityIdentifier())) {
+                parts.add("defaultAuthority=" + parameter.getDefaultAuthorityIdentifier().trim());
+            }
+            if (!isBlank(parameter.getNotes())) {
+                parts.add(parameter.getNotes().trim());
+            }
+            if (!parts.isEmpty()) {
+                chunks.add(String.join(" ", parts));
+            }
+        });
+        return chunks.isEmpty() ? null : String.join(" ; ", chunks);
+    }
+
+    private List<String> buildSpecificationExamples(TestDraft td, int maxExamples) {
+        List<String> examples = new ArrayList<>();
+        for (var row : td.getConformanceRows()) {
+            if (row == null || row.getValues() == null) {
+                continue;
+            }
+            Map<String, String> values = row.getValues();
+            String status = values.get("Response.status");
+            if (!"RUN_HAS_RESULT".equals(collapseWhitespace(status))) {
+                continue;
+            }
+
+            List<String> inputs = new ArrayList<>();
+            values.forEach((key, value) -> {
+                if (isBlank(value)
+                        || "Label".equals(key)
+                        || "Response.status".equals(key)
+                        || "Response.result".equals(key)
+                        || "Response.comment".equals(key)) {
+                    return;
+                }
+                inputs.add(key + "=\"" + collapseWhitespace(value).replace("\"", "\\\"") + "\"");
+            });
+            if (inputs.isEmpty()) {
+                continue;
+            }
+
+            StringBuilder sb = new StringBuilder(String.join(", ", inputs))
+                    .append(": Response.status=RUN_HAS_RESULT");
+            if (!isBlank(values.get("Response.result"))) {
+                sb.append(", Response.result=")
+                        .append(collapseWhitespace(values.get("Response.result")));
+            }
+            if (!isBlank(values.get("Response.comment"))) {
+                sb.append(", Response.comment=\"")
+                        .append(collapseWhitespace(values.get("Response.comment")).replace("\"", "\\\""))
+                        .append("\"");
+            }
+            examples.add(sb.toString());
+            if (examples.size() >= maxExamples) {
+                break;
+            }
+        }
+        return examples;
     }
 
     private String buildAuthoritiesDefaultsText(TestDraft td) {
@@ -337,9 +442,14 @@ public class TurtleExportService {
 
         String source = raw.replace("\r", "\n");
         List<String> items = new ArrayList<>();
+        String leadingText = "";
+        int firstLiStart = -1;
 
         Matcher liMatcher = LI_TAG_PATTERN.matcher(source);
         while (liMatcher.find()) {
+            if (firstLiStart < 0) {
+                firstLiStart = liMatcher.start();
+            }
             String text = stripTags(liMatcher.group(1));
             if (!isBlank(text)) {
                 items.add(text);
@@ -361,12 +471,30 @@ public class TurtleExportService {
             return null;
         }
 
-        StringBuilder sb = new StringBuilder("<ul>");
+        if (firstLiStart >= 0) {
+            leadingText = stripTags(source.substring(0, firstLiStart));
+        }
+
+        StringBuilder sb = new StringBuilder();
+        if (!isBlank(leadingText)) {
+            sb.append(collapseWhitespace(leadingText)).append(' ');
+        }
+        sb.append("<ul>");
         for (String item : items) {
             sb.append("<li>").append(collapseWhitespace(item)).append("</li>");
         }
         sb.append("</ul>");
         return sb.toString().replace("\n", " ").replace("\r", "").trim();
+    }
+
+    private String testDisplayLabel(TestDraft td) {
+        if (!isBlank(td.getLabel())) {
+            return td.getLabel().trim();
+        }
+        if (!isBlank(td.getPrefLabel())) {
+            return td.getPrefLabel().trim();
+        }
+        return "Unlabeled test";
     }
 
     private static String stripTags(String value) {
