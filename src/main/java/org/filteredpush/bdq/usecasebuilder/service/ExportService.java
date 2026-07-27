@@ -2,7 +2,12 @@ package org.filteredpush.bdq.usecasebuilder.service;
 
 import org.filteredpush.bdq.usecasebuilder.model.InformationElementRef;
 import org.filteredpush.bdq.usecasebuilder.model.ProjectState;
+import org.filteredpush.bdq.usecasebuilder.model.RequirementCoverage;
 import org.filteredpush.bdq.usecasebuilder.model.TestDraft;
+import org.filteredpush.bdq.usecasebuilder.model.ExpectedResponseClause;
+import org.filteredpush.bdq.usecasebuilder.model.AuthorityDefault;
+import org.filteredpush.bdq.usecasebuilder.model.ParameterDefinition;
+import org.filteredpush.bdq.usecasebuilder.model.ConformanceRow;
 import org.filteredpush.bdq.usecasebuilder.model.UseCaseDraft;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +57,7 @@ public class ExportService {
 
         String dir = state.getOutputDirectory();
         if (dir == null || dir.trim().isEmpty()) {
-            dir = ".";
+            dir = "output";
         }
 
         File outputDir = new File(dir);
@@ -65,9 +70,13 @@ public class ExportService {
 
         writeMarkdown(state, mdFile);
         writeJson(state, jsonFile);
+        ConformanceCsvService conformanceCsvService = new ConformanceCsvService();
+        conformanceCsvService.writePerTestCsv(outputDir, state);
+        conformanceCsvService.writeCombinedCsv(outputDir, state);
 
         String msg = "Exported:\n  " + mdFile.getAbsolutePath()
-                + "\n  " + jsonFile.getAbsolutePath();
+                + "\n  " + jsonFile.getAbsolutePath()
+                + "\n  " + new File(outputDir, "conformance_all_tests.csv").getAbsolutePath();
         logger.info("Export complete: {}", msg);
         return msg;
     }
@@ -149,18 +158,62 @@ public class ExportService {
                     pw.println("- **Resource type:** "
                             + (td.getResourceType() != null
                                     ? td.getResourceType().getDisplayName() : "?"));
+                    pw.println("- **Information element:** " + nvl(td.getInformationElement()));
                     pw.println("- **Dimension:** " + nvl(td.getDimension()));
                     pw.println("- **Criterion/Enhancement:** "
                             + nvl(td.getCriterionOrEnhancement()));
+                    pw.println("- **Use-case reference:** " + nvl(td.getUseCaseReference()));
+                    pw.println("- **Parameters/defaults:** " + nvl(td.getParameterDefaults()));
+                    if (!td.getParameterDefinitions().isEmpty()) {
+                        pw.println("- **Parameters:**");
+                        for (ParameterDefinition parameter : td.getParameterDefinitions()) {
+                            pw.println("  - `" + nvl(parameter.getName()) + "` "
+                                    + "(datatype: " + nvl(parameter.getDatatype()) + ", "
+                                    + "default authority: " + nvl(parameter.getDefaultAuthorityIdentifier()) + ")");
+                        }
+                    }
+                    if (!td.getAuthorityDefaults().isEmpty()) {
+                        pw.println("- **Authority defaults:**");
+                        for (AuthorityDefault authority : td.getAuthorityDefaults()) {
+                            pw.println("  - `" + nvl(authority.getIdentifier()) + "` "
+                                    + "[" + (authority.getPatternType() != null
+                                    ? authority.getPatternType().name() : "") + "] "
+                                    + nvl(authority.getAuthorityUri()));
+                        }
+                    }
                     pw.println();
                     pw.println("**Expected Response:**");
                     pw.println();
                     pw.println(nvl(td.getExpectedResponse()));
+                    if (!td.getExpectedResponseClauses().isEmpty()) {
+                        pw.println();
+                        pw.println("**Expected Response Clauses:**");
+                        for (ExpectedResponseClause clause : td.getExpectedResponseClauses()) {
+                            pw.println("- " + clause);
+                        }
+                    }
                     pw.println();
                     if (td.getNotes() != null && !td.getNotes().trim().isEmpty()) {
                         pw.println("**Notes:** " + td.getNotes());
                         pw.println();
                     }
+                }
+            }
+
+            pw.println("## Gap Analysis Matrix");
+            pw.println();
+            if (state.getRequirementCoverageRows().isEmpty()) {
+                pw.println("*(none defined)*");
+            } else {
+                pw.println("| Requirement ID/summary | Information Element(s) | Existing Tests mapped | New Tests drafted | Coverage status | Notes/rationale |");
+                pw.println("|---|---|---|---|---|---|");
+                for (RequirementCoverage row : state.getRequirementCoverageRows()) {
+                    pw.println("| " + nvl(row.getRequirementId()) + " " + nvl(row.getRequirementSummary())
+                            + " | " + nvl(row.getInformationElements())
+                            + " | " + nvl(String.join("; ", row.getLinkedExistingTests()))
+                            + " | " + nvl(String.join("; ", row.getLinkedNewTests()))
+                            + " | " + row.computeStatus().getDisplayName()
+                            + " | " + nvl(row.getPartialCoverageRationale()) + " |");
                 }
             }
         }
@@ -218,13 +271,29 @@ public class ExportService {
             testMap.put("type", td.getType() != null ? td.getType().name() : null);
             testMap.put("resourceType",
                     td.getResourceType() != null ? td.getResourceType().name() : null);
+            testMap.put("informationElement", td.getInformationElement());
             testMap.put("dimension", td.getDimension());
             testMap.put("criterionOrEnhancement", td.getCriterionOrEnhancement());
+            testMap.put("useCaseReference", td.getUseCaseReference());
+            testMap.put("parameterDefaults", td.getParameterDefaults());
             testMap.put("expectedResponse", td.getExpectedResponse());
             testMap.put("notes", td.getNotes());
+            if (!td.getExpectedResponseClauses().isEmpty()) {
+                testMap.put("expectedResponseClauses", joinClauses(td.getExpectedResponseClauses()));
+            }
+            if (!td.getAuthorityDefaults().isEmpty()) {
+                testMap.put("authorityDefaults", joinAuthorities(td.getAuthorityDefaults()));
+            }
+            if (!td.getParameterDefinitions().isEmpty()) {
+                testMap.put("parameterDefinitions", joinParameters(td.getParameterDefinitions()));
+            }
+            if (!td.getConformanceRows().isEmpty()) {
+                testMap.put("conformanceRows", joinConformanceRows(td.getConformanceRows()));
+            }
             testList.add(testMap);
         }
         root.put("newTests", testList);
+        root.put("requirementCoverageMatrix", toRequirementCoverageRows(state));
 
         // Serialize using built-in simple JSON writer
         writeSimpleJson(root, file);
@@ -299,5 +368,76 @@ public class ExportService {
 
     private static String nvl(String s) {
         return s != null ? s : "";
+    }
+
+    private String joinClauses(List<ExpectedResponseClause> clauses) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < clauses.size(); i++) {
+            if (i > 0) {
+                sb.append(" || ");
+            }
+            sb.append(clauses.get(i).toString());
+        }
+        return sb.toString();
+    }
+
+    private String joinAuthorities(List<AuthorityDefault> authorities) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < authorities.size(); i++) {
+            AuthorityDefault authority = authorities.get(i);
+            if (i > 0) {
+                sb.append(" || ");
+            }
+            sb.append(nvl(authority.getIdentifier())).append('|')
+                    .append(authority.getPatternType() != null ? authority.getPatternType().name() : "")
+                    .append('|').append(nvl(authority.getAuthorityUri()))
+                    .append('|').append(nvl(authority.getApiLabel()))
+                    .append('|').append(nvl(authority.getApiEndpoint()))
+                    .append('|').append(nvl(authority.getRegexPattern()));
+        }
+        return sb.toString();
+    }
+
+    private String joinParameters(List<ParameterDefinition> parameters) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < parameters.size(); i++) {
+            ParameterDefinition parameter = parameters.get(i);
+            if (i > 0) {
+                sb.append(" || ");
+            }
+            sb.append(nvl(parameter.getName())).append('|')
+                    .append(nvl(parameter.getDatatype())).append('|')
+                    .append(nvl(parameter.getDefaultAuthorityIdentifier())).append('|')
+                    .append(nvl(parameter.getNotes()));
+        }
+        return sb.toString();
+    }
+
+    private String joinConformanceRows(List<ConformanceRow> rows) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < rows.size(); i++) {
+            if (i > 0) {
+                sb.append(" || ");
+            }
+            sb.append(rows.get(i).getValues().toString());
+        }
+        return sb.toString();
+    }
+
+    private List<Map<String, String>> toRequirementCoverageRows(ProjectState state) {
+        List<Map<String, String>> rows = new ArrayList<>();
+        for (RequirementCoverage row : state.getRequirementCoverageRows()) {
+            Map<String, String> map = new LinkedHashMap<>();
+            map.put("requirementId", row.getRequirementId());
+            map.put("requirementSummary", row.getRequirementSummary());
+            map.put("informationElements", row.getInformationElements());
+            map.put("existingTests", String.join("; ", row.getLinkedExistingTests()));
+            map.put("newTests", String.join("; ", row.getLinkedNewTests()));
+            map.put("coverageStatus", row.computeStatus().name());
+            map.put("partialCoverageRationale", row.getPartialCoverageRationale());
+            map.put("notes", row.getNotes());
+            rows.add(map);
+        }
+        return rows;
     }
 }

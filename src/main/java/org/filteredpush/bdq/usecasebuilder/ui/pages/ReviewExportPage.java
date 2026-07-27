@@ -2,6 +2,7 @@ package org.filteredpush.bdq.usecasebuilder.ui.pages;
 
 import org.filteredpush.bdq.usecasebuilder.model.InformationElementRef;
 import org.filteredpush.bdq.usecasebuilder.model.ProjectState;
+import org.filteredpush.bdq.usecasebuilder.model.RequirementCoverage;
 import org.filteredpush.bdq.usecasebuilder.model.TestDraft;
 import org.filteredpush.bdq.usecasebuilder.service.ExportService;
 import org.filteredpush.bdq.usecasebuilder.service.ValidationService;
@@ -20,7 +21,7 @@ import java.util.List;
 import javax.swing.JOptionPane;
 
 /**
- * Wizard page 6 – Review and export.
+ * Wizard page 7 – Review and export.
  *
  * <p>Displays a read-only summary of the entire project state and provides an
  * Export button to write the output artifacts immediately (without leaving the
@@ -78,6 +79,9 @@ public class ReviewExportPage extends WizardPage {
 
         JLabel intro = new JLabel(
                 "<html><b>Review your use case package.</b><br>"
+                        + "What: a final check of use-case, terms, reused tests, and new test drafts.<br>"
+                        + "Why: this catches missing required details before sharing artifacts.<br>"
+                        + "Convention: resolve warnings and keep labels/terms aligned with BDQ vocabularies.<br>"
                         + "Click <b>Export Now</b> to write the output files to the configured directory, "
                         + "or click <b>Finish</b> in the navigation bar to export and close the wizard."
                         + "</html>");
@@ -154,7 +158,21 @@ public class ReviewExportPage extends WizardPage {
             sb.append("  [").append(i + 1).append("] ").append(td).append('\n');
             sb.append("       Type     : ")
                     .append(td.getType() != null ? td.getType().getDisplayName() : "?").append('\n');
+            sb.append("       Info Elem: ").append(nvl(td.getInformationElement())).append('\n');
             sb.append("       Dimension: ").append(nvl(td.getDimension())).append('\n');
+            sb.append("       Criterion: ").append(nvl(td.getCriterionOrEnhancement())).append('\n');
+            sb.append("       Use case : ").append(nvl(td.getUseCaseReference())).append('\n');
+            sb.append("       Params   : ").append(td.getParameterDefinitions().size()).append('\n');
+            sb.append("       Authorities: ").append(td.getAuthorityDefaults().size()).append('\n');
+            sb.append("       CSV rows : ").append(td.getConformanceRows().size()).append('\n');
+        }
+
+        sb.append("\n=== Gap Analysis Matrix (")
+                .append(state.getRequirementCoverageRows().size()).append(") ===\n");
+        for (RequirementCoverage row : state.getRequirementCoverageRows()) {
+            sb.append("  ").append(row.getRequirementId()).append(" ")
+                    .append(nvl(row.getRequirementSummary())).append(" -> ")
+                    .append(row.computeStatus().getDisplayName()).append('\n');
         }
 
         // Output

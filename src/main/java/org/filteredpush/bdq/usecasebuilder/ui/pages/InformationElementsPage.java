@@ -4,19 +4,17 @@ import org.filteredpush.bdq.usecasebuilder.model.InfoElementRole;
 import org.filteredpush.bdq.usecasebuilder.model.InformationElementRef;
 import org.filteredpush.bdq.usecasebuilder.model.ProjectState;
 import org.filteredpush.bdq.usecasebuilder.service.ValidationService;
+import org.filteredpush.bdq.usecasebuilder.service.VocabularyService;
 import org.filteredpush.bdq.usecasebuilder.ui.WizardPage;
 
-import javax.swing.AbstractListModel;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultCellEditor;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.table.AbstractTableModel;
 import java.awt.BorderLayout;
@@ -35,15 +33,18 @@ public class InformationElementsPage extends WizardPage {
 
     private IETableModel tableModel;
     private JTable table;
+    private JComboBox<String> termCombo;
     private final ValidationService validationService = new ValidationService();
+    private final VocabularyService vocabularyService;
 
     /**
      * Creates the information elements page.
      *
      * @param state shared project state
      */
-    public InformationElementsPage(ProjectState state) {
+    public InformationElementsPage(ProjectState state, VocabularyService vocabularyService) {
         super(state);
+        this.vocabularyService = vocabularyService;
         buildUi();
     }
 
@@ -59,6 +60,7 @@ public class InformationElementsPage extends WizardPage {
     @Override
     public void onEnter() {
         tableModel.load(new ArrayList<>(state.getInformationElements()));
+        refreshTermPicklist();
     }
 
     @Override
@@ -85,8 +87,11 @@ public class InformationElementsPage extends WizardPage {
 
         JLabel intro = new JLabel(
                 "<html><b>Identify the information elements</b> your use case depends on.<br>"
-                        + "For each term (e.g. <tt>dwc:scientificName</tt>), specify whether tests in "
-                        + "your use case act upon it or consult it for context.</html>");
+                        + "What: terms your tests inspect or use as context.<br>"
+                        + "Why: these terms anchor scope and traceability for test definitions.<br>"
+                        + "Convention: use qualified names (e.g. <tt>dwc:scientificName</tt>, "
+                        + "<tt>ac:accessURI</tt>) and assign each as <b>ActedUpon</b> or "
+                        + "<b>Consulted</b>.</html>");
         add(intro, BorderLayout.NORTH);
 
         tableModel = new IETableModel();
@@ -107,26 +112,39 @@ public class InformationElementsPage extends WizardPage {
 
         // Buttons
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
-        JButton addButton = new JButton("Add");
+        termCombo = new JComboBox<>();
+        termCombo.setEditable(true);
+        termCombo.setPrototypeDisplayValue("dwc:coordinateUncertaintyInMeters");
+        termCombo.setToolTipText("Pick from Darwin Core, Audiovisual Core, or custom vocabularies");
+        JButton addButton = new JButton("Add term");
         JButton removeButton = new JButton("Remove");
 
-        addButton.addActionListener(e -> addRow());
+        addButton.addActionListener(e -> addSelectedTerm());
         removeButton.addActionListener(e -> removeRow());
 
+        buttons.add(new JLabel("Term:"));
+        buttons.add(termCombo);
         buttons.add(addButton);
         buttons.add(removeButton);
         add(buttons, BorderLayout.SOUTH);
     }
 
-    private void addRow() {
-        String qname = JOptionPane.showInputDialog(this,
-                "Enter the qualified name of the term\n(e.g. dwc:scientificName):",
-                "Add information element",
-                JOptionPane.PLAIN_MESSAGE);
-        if (qname == null || qname.trim().isEmpty()) {
+    private void addSelectedTerm() {
+        Object selected = termCombo.getEditor().getItem();
+        if (selected == null) {
             return;
         }
-        tableModel.addRow(new InformationElementRef(qname.trim(), InfoElementRole.ACTED_UPON));
+        String qname = selected.toString().trim();
+        if (!qname.isEmpty() && !tableModel.hasTerm(qname)) {
+            tableModel.addRow(new InformationElementRef(qname, InfoElementRole.ACTED_UPON));
+        }
+    }
+
+    private void refreshTermPicklist() {
+        termCombo.removeAllItems();
+        for (String term : vocabularyService.getInformationElementTerms()) {
+            termCombo.addItem(term);
+        }
     }
 
     private void removeRow() {
@@ -158,6 +176,15 @@ public class InformationElementsPage extends WizardPage {
         void addRow(InformationElementRef ref) {
             rows.add(ref);
             fireTableRowsInserted(rows.size() - 1, rows.size() - 1);
+        }
+
+        boolean hasTerm(String qname) {
+            for (InformationElementRef row : rows) {
+                if (row.getQname() != null && row.getQname().equalsIgnoreCase(qname)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         void removeRow(int index) {

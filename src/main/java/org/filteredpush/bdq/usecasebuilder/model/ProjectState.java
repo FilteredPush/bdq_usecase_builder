@@ -3,6 +3,7 @@ package org.filteredpush.bdq.usecasebuilder.model;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.nio.file.Paths;
 
 /**
  * Central in-memory state object that accumulates all authoring inputs across
@@ -20,10 +21,12 @@ public class ProjectState {
     private final List<InformationElementRef> informationElements = new ArrayList<>();
     private final List<String> selectedExistingTestIris = new ArrayList<>();
     private final List<TestDraft> newTestDrafts = new ArrayList<>();
+    private final List<RequirementCoverage> requirementCoverageRows = new ArrayList<>();
 
     /** Creates an empty project state. */
     public ProjectState() {
         this.useCaseDraft = new UseCaseDraft();
+        this.outputDirectory = Paths.get(System.getProperty("user.dir"), "output").toString();
     }
 
     // -----------------------------------------------------------------------
@@ -177,5 +180,22 @@ public class ProjectState {
     /** Clears all new test drafts. */
     public void clearNewTestDrafts() {
         newTestDrafts.clear();
+    }
+
+    // -----------------------------------------------------------------------
+    // Gap analysis matrix rows
+    // -----------------------------------------------------------------------
+
+    /** Returns an unmodifiable view of requirement coverage rows. */
+    public List<RequirementCoverage> getRequirementCoverageRows() {
+        return Collections.unmodifiableList(requirementCoverageRows);
+    }
+
+    /** Replaces requirement coverage rows. */
+    public void setRequirementCoverageRows(List<RequirementCoverage> rows) {
+        requirementCoverageRows.clear();
+        if (rows != null) {
+            requirementCoverageRows.addAll(rows);
+        }
     }
 }

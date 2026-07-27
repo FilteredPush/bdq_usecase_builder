@@ -1,12 +1,17 @@
 package org.filteredpush.bdq.usecasebuilder.model;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * A draft definition for a new BDQ data quality test being authored by the
  * user.
  *
  * <p>Captures the minimal set of descriptors needed for Phase 1: label
  * anatomy, preferred label, test type, resource type, dimension,
- * criterion/enhancement, and the expected response narrative.</p>
+ * criterion/enhancement, and the expected response narrative. Phase 2 extends
+ * this with optional use-case references and parameter/default descriptors.</p>
  */
 public class TestDraft {
 
@@ -14,10 +19,17 @@ public class TestDraft {
     private String prefLabel;
     private TestType type;
     private ResourceType resourceType;
+    private String informationElement;
     private String dimension;
     private String criterionOrEnhancement;
+    private String useCaseReference;
+    private String parameterDefaults;
     private String expectedResponse;
     private String notes;
+    private final List<ExpectedResponseClause> expectedResponseClauses = new ArrayList<>();
+    private final List<AuthorityDefault> authorityDefaults = new ArrayList<>();
+    private final List<ParameterDefinition> parameterDefinitions = new ArrayList<>();
+    private final List<ConformanceRow> conformanceRows = new ArrayList<>();
 
     /** Creates an empty test draft. */
     public TestDraft() {
@@ -70,6 +82,16 @@ public class TestDraft {
         this.resourceType = resourceType;
     }
 
+    /** Returns the information element this test targets. */
+    public String getInformationElement() {
+        return informationElement;
+    }
+
+    /** Sets the information element this test targets. */
+    public void setInformationElement(String informationElement) {
+        this.informationElement = informationElement;
+    }
+
     /**
      * Returns the data quality dimension (e.g., {@code Completeness},
      * {@code Conformance}).
@@ -96,6 +118,26 @@ public class TestDraft {
         this.criterionOrEnhancement = criterionOrEnhancement;
     }
 
+    /** Returns an optional reference to a BDQ use-case concept (bdquc). */
+    public String getUseCaseReference() {
+        return useCaseReference;
+    }
+
+    /** Sets the optional use-case reference descriptor. */
+    public void setUseCaseReference(String useCaseReference) {
+        this.useCaseReference = useCaseReference;
+    }
+
+    /** Returns optional parameter/default profile text for this draft. */
+    public String getParameterDefaults() {
+        return parameterDefaults;
+    }
+
+    /** Sets optional parameter/default profile text. */
+    public void setParameterDefaults(String parameterDefaults) {
+        this.parameterDefaults = parameterDefaults;
+    }
+
     /**
      * Returns the free-text expected response clause describing what the test
      * should return under various conditions.
@@ -117,6 +159,58 @@ public class TestDraft {
     /** Sets additional notes. */
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    /** Returns the structured expected-response clauses in authoring order. */
+    public List<ExpectedResponseClause> getExpectedResponseClauses() {
+        return Collections.unmodifiableList(expectedResponseClauses);
+    }
+
+    /** Replaces structured expected-response clauses. */
+    public void setExpectedResponseClauses(List<ExpectedResponseClause> clauses) {
+        expectedResponseClauses.clear();
+        if (clauses != null) {
+            expectedResponseClauses.addAll(clauses);
+        }
+    }
+
+    /** Returns structured authority/default definitions for this test draft. */
+    public List<AuthorityDefault> getAuthorityDefaults() {
+        return Collections.unmodifiableList(authorityDefaults);
+    }
+
+    /** Replaces authority/default definitions for this test draft. */
+    public void setAuthorityDefaults(List<AuthorityDefault> authorities) {
+        authorityDefaults.clear();
+        if (authorities != null) {
+            authorityDefaults.addAll(authorities);
+        }
+    }
+
+    /** Returns structured parameter definitions for this test draft. */
+    public List<ParameterDefinition> getParameterDefinitions() {
+        return Collections.unmodifiableList(parameterDefinitions);
+    }
+
+    /** Replaces parameter definitions for this test draft. */
+    public void setParameterDefinitions(List<ParameterDefinition> parameters) {
+        parameterDefinitions.clear();
+        if (parameters != null) {
+            parameterDefinitions.addAll(parameters);
+        }
+    }
+
+    /** Returns conformance CSV row definitions for this test draft. */
+    public List<ConformanceRow> getConformanceRows() {
+        return Collections.unmodifiableList(conformanceRows);
+    }
+
+    /** Replaces conformance CSV row definitions for this test draft. */
+    public void setConformanceRows(List<ConformanceRow> rows) {
+        conformanceRows.clear();
+        if (rows != null) {
+            conformanceRows.addAll(rows);
+        }
     }
 
     @Override

@@ -76,6 +76,10 @@ public class ModelTest {
         assertNull(draft.getLabel());
         assertNull(draft.getType());
         assertNull(draft.getResourceType());
+        assertTrue(draft.getExpectedResponseClauses().isEmpty());
+        assertTrue(draft.getAuthorityDefaults().isEmpty());
+        assertTrue(draft.getParameterDefinitions().isEmpty());
+        assertTrue(draft.getConformanceRows().isEmpty());
     }
 
     @Test
@@ -87,6 +91,8 @@ public class ModelTest {
         draft.setResourceType(ResourceType.SINGLE_RECORD);
         draft.setDimension("Completeness");
         draft.setCriterionOrEnhancement("NotEmpty");
+        draft.setUseCaseReference("UseCase");
+        draft.setParameterDefaults("COMPLIANT");
         draft.setExpectedResponse("COMPLIANT if dwc:scientificName is not empty");
         draft.setNotes("Note 1");
 
@@ -96,6 +102,8 @@ public class ModelTest {
         assertEquals(ResourceType.SINGLE_RECORD, draft.getResourceType());
         assertEquals("Completeness", draft.getDimension());
         assertEquals("NotEmpty", draft.getCriterionOrEnhancement());
+        assertEquals("UseCase", draft.getUseCaseReference());
+        assertEquals("COMPLIANT", draft.getParameterDefaults());
         assertEquals("COMPLIANT if dwc:scientificName is not empty", draft.getExpectedResponse());
         assertEquals("Note 1", draft.getNotes());
     }
@@ -122,9 +130,12 @@ public class ModelTest {
     public void testProjectStateDefaults() {
         ProjectState state = new ProjectState();
         assertNotNull(state.getUseCaseDraft());
+        assertNotNull(state.getOutputDirectory());
+        assertTrue(state.getOutputDirectory().endsWith("output"));
         assertTrue(state.getInformationElements().isEmpty());
         assertTrue(state.getSelectedExistingTestIris().isEmpty());
         assertTrue(state.getNewTestDrafts().isEmpty());
+        assertTrue(state.getRequirementCoverageRows().isEmpty());
     }
 
     @Test

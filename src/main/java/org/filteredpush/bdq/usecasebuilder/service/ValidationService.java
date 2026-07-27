@@ -3,11 +3,16 @@ package org.filteredpush.bdq.usecasebuilder.service;
 import org.filteredpush.bdq.usecasebuilder.model.InformationElementRef;
 import org.filteredpush.bdq.usecasebuilder.model.ProjectState;
 import org.filteredpush.bdq.usecasebuilder.model.TestDraft;
+import org.filteredpush.bdq.usecasebuilder.model.AuthorityDefault;
+import org.filteredpush.bdq.usecasebuilder.model.AuthorityPatternType;
+import org.filteredpush.bdq.usecasebuilder.model.ParameterDefinition;
 import org.filteredpush.bdq.usecasebuilder.model.UseCaseDraft;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Lightweight required-field validation service for the Swing wizard.
@@ -109,6 +114,9 @@ public class ValidationService {
         if (draft.getType() == null) {
             errors.add("Test type (Validation, Measure, Amendment, or Issue) is required.");
         }
+        if (isBlank(draft.getInformationElement())) {
+            errors.add("Information element is required for each new test draft.");
+        }
         return errors;
     }
 
@@ -130,6 +138,57 @@ public class ValidationService {
         errors.addAll(validateInformationElementsPage(state));
         for (TestDraft draft : state.getNewTestDrafts()) {
             errors.addAll(validateNewTestPage(draft));
+            errors.addAll(validateAuthorityAndParameters(draft));
+        }
+        return errors;
+    }
+
+    /**
+     * Validates structured authority/default and parameter definitions for a draft.
+     */
+    public List<String> validateAuthorityAndParameters(TestDraft draft) {
+        List<String> errors = new ArrayList<>();
+        if (draft == null) {
+            return errors;
+        }
+        for (int i = 0; i < draft.getAuthorityDefaults().size(); i++) {
+            AuthorityDefault authority = draft.getAuthorityDefaults().get(i);
+            String prefix = "Authority #" + (i + 1) + ": ";
+            if (isBlank(authority.getIdentifier())) {
+                errors.add(prefix + "identifier is required.");
+            }
+            AuthorityPatternType type = authority.getPatternType() != null
+                    ? authority.getPatternType() : AuthorityPatternType.URI_ONLY;
+            if (type == AuthorityPatternType.URI_ONLY && isBlank(authority.getAuthorityUri())) {
+                errors.add(prefix + "URI is required for URI-only pattern.");
+            } else if (type == AuthorityPatternType.URI_API) {
+                if (isBlank(authority.getAuthorityUri())) {
+                    errors.add(prefix + "URI is required for URI+API pattern.");
+                }
+                if (isBlank(authority.getApiLabel())) {
+                    errors.add(prefix + "API label is required for URI+API pattern.");
+                }
+                if (isBlank(authority.getApiEndpoint())) {
+                    errors.add(prefix + "API endpoint is required for URI+API pattern.");
+                }
+            } else if (type == AuthorityPatternType.REGEX_BASED
+                    && isBlank(authority.getRegexPattern())) {
+                errors.add(prefix + "regex pattern is required for regex-based pattern.");
+            }
+        }
+
+        Set<String> parameterNames = new HashSet<>();
+        for (int i = 0; i < draft.getParameterDefinitions().size(); i++) {
+            ParameterDefinition parameter = draft.getParameterDefinitions().get(i);
+            String name = parameter.getName() != null ? parameter.getName().trim() : "";
+            if (name.isEmpty()) {
+                errors.add("Parameter #" + (i + 1) + ": name is required.");
+                continue;
+            }
+            String lower = name.toLowerCase();
+            if (!parameterNames.add(lower)) {
+                errors.add("Duplicate parameter name: " + name);
+            }
         }
         return errors;
     }
