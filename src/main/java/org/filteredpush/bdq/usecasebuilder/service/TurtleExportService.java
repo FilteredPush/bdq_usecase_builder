@@ -44,6 +44,10 @@ import java.util.UUID;
  * <p>The output file is named {@code usecase_new.ttl} (minimal) or
  * {@code usecase_with_existing.ttl} (include-existing mode) and is written to
  * the configured output directory.</p>
+ *
+ * <p>Dimension, criterion, and enhancement values are exported as typed
+ * resources using their respective namespaces:
+ * {@code bdqdim:}, {@code bdqcrit:}, and {@code bdqenh:}.</p>
  */
 public class TurtleExportService {
 
@@ -51,6 +55,15 @@ public class TurtleExportService {
 
     /** Base namespace for newly authored resources (urn-based by default). */
     private static final String DEFAULT_BASE = "urn:uuid:";
+
+    /** Namespace for bdqdim (data quality dimension) terms. */
+    static final String BDQDIM_NS = "https://rs.tdwg.org/bdqdim/terms/";
+
+    /** Namespace for bdqcrit (data quality criterion) terms. */
+    static final String BDQCRIT_NS = "https://rs.tdwg.org/bdqcrit/terms/";
+
+    /** Namespace for bdqenh (data quality enhancement) terms. */
+    static final String BDQENH_NS = "https://rs.tdwg.org/bdqenh/terms/";
 
     /** Prefix declarations emitted at the top of the Turtle file. */
     private static final String PREFIXES =
@@ -131,6 +144,9 @@ public class TurtleExportService {
         model.setNsPrefix("dcterms", "http://purl.org/dc/terms/");
         model.setNsPrefix("bdqffdq", BdqFfdq.NS);
         model.setNsPrefix("bdqtest", "https://rs.tdwg.org/bdqtest/terms/");
+        model.setNsPrefix("bdqdim", BDQDIM_NS);
+        model.setNsPrefix("bdqcrit", BDQCRIT_NS);
+        model.setNsPrefix("bdqenh", BDQENH_NS);
         model.setNsPrefix("dwc", "http://rs.tdwg.org/dwc/terms/");
 
         UseCaseDraft uc = state.getUseCaseDraft();
@@ -239,19 +255,18 @@ public class TurtleExportService {
 
         // Dimension
         if (td.getDimension() != null && !td.getDimension().isEmpty()) {
-            testRes.addProperty(
-                    model.createProperty(BdqFfdq.NS, "hasDimension"),
-                    td.getDimension());
+            Resource dimRes = resolveVocabTerm(model, td.getDimension(), BDQDIM_NS);
+            testRes.addProperty(model.createProperty(BdqFfdq.NS, "hasDimension"), dimRes);
         }
 
         // Criterion / enhancement
         if (td.getCriterionOrEnhancement() != null
                 && !td.getCriterionOrEnhancement().isEmpty()) {
-            String predicate = (td.getType() == TestType.AMENDMENT)
-                    ? "hasEnhancement" : "hasCriterion";
-            testRes.addProperty(
-                    model.createProperty(BdqFfdq.NS, predicate),
-                    td.getCriterionOrEnhancement());
+            boolean isAmendment = (td.getType() == TestType.AMENDMENT);
+            String predicate = isAmendment ? "hasEnhancement" : "hasCriterion";
+            String defaultNs  = isAmendment ? BDQENH_NS : BDQCRIT_NS;
+            Resource vocabRes = resolveVocabTerm(model, td.getCriterionOrEnhancement(), defaultNs);
+            testRes.addProperty(model.createProperty(BdqFfdq.NS, predicate), vocabRes);
         }
 
         // Expected response / specification
@@ -337,5 +352,45 @@ public class TurtleExportService {
                 .replaceAll("[^A-Za-z0-9_\\-]", "_")
                 .replaceAll("_+", "_");
         return DEFAULT_BASE + safe;
+    }
+
+    /**
+     * Resolves a vocabulary term string (e.g. {@code "Completeness"},
+     * {@code "bdqdim:Completeness"}, or a full URI) to an RDF {@link Resource}
+     * using the supplied default namespace as the fallback when the term has no
+     * namespace qualifier.
+     *
+     * <p>Resolution rules (in order):</p>
+     * <ol>
+     *   <li>If the value contains {@code "://"} it is treated as a full URI.</li>
+     *   <li>If the value contains {@code ":"} it is split into prefix + local name;
+     *       the prefix is looked up in the model's registered namespace map.</li>
+     *   <li>Otherwise the {@code defaultNs} is prepended to the local name.</li>
+     * </ol>
+     *
+     * @param model     the Jena model (used for prefix lookup)
+     * @param term      the term string; never {@code null}
+     * @param defaultNs the namespace to use when no prefix is present
+     * @return an RDF resource for the resolved URI
+     */
+    static Resource resolveVocabTerm(Model model, String term, String defaultNs) {
+        String t = term.trim();
+        // Full URI
+        if (t.contains("://")) {
+            return model.createResource(t);
+        }
+        // Prefixed name: split on first ':'
+        int colon = t.indexOf(':');
+        if (colon > 0) {
+            String prefix = t.substring(0, colon);
+            String localName = t.substring(colon + 1);
+            String ns = model.getNsPrefixURI(prefix);
+            if (ns != null) {
+                return model.createResource(ns + localName);
+            }
+            // Unknown prefix – fall through to default
+        }
+        // Local name only: apply default namespace
+        return model.createResource(defaultNs + t);
     }
 }

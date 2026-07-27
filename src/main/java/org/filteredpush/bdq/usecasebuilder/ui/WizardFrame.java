@@ -184,7 +184,7 @@ public class WizardFrame extends JFrame {
         vocabularyService.load();
 
         pages = new ArrayList<>();
-        pages.add(new WelcomePage(state));
+        pages.add(new WelcomePage(state, catalogService));
         pages.add(new UseCasePage(state));
         pages.add(new InformationElementsPage(state, vocabularyService));
         pages.add(new ExistingTestsPage(state, catalogService));

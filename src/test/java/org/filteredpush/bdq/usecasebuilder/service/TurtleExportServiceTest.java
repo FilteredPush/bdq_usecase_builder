@@ -332,6 +332,87 @@ public class TurtleExportServiceTest {
     }
 
     // -----------------------------------------------------------------------
+    // Dimension / criterion / enhancement as resources
+    // -----------------------------------------------------------------------
+
+    @Test
+    void testBuildModelDimensionIsResourceNotLiteral() {
+        ProjectState state = buildSampleState(); // draft has dimension "Completeness"
+        Model model = service.buildModel(state, false, null);
+        // bdqffdq:hasDimension should point to bdqdim:Completeness (a resource)
+        org.apache.jena.rdf.model.Property hasDim =
+                model.createProperty(BdqFfdq.NS + "hasDimension");
+        boolean found = model.listStatements(null, hasDim, (org.apache.jena.rdf.model.RDFNode) null)
+                .toList().stream()
+                .anyMatch(stmt -> stmt.getObject().isResource()
+                        && stmt.getObject().asResource().getURI()
+                               .equals(TurtleExportService.BDQDIM_NS + "Completeness"));
+        assertTrue(found, "hasDimension should reference bdqdim:Completeness as a resource");
+    }
+
+    @Test
+    void testBuildModelCriterionIsResourceNotLiteral() {
+        ProjectState state = buildSampleState(); // draft has criterion "NotEmpty"
+        Model model = service.buildModel(state, false, null);
+        org.apache.jena.rdf.model.Property hasCrit =
+                model.createProperty(BdqFfdq.NS + "hasCriterion");
+        boolean found = model.listStatements(null, hasCrit, (org.apache.jena.rdf.model.RDFNode) null)
+                .toList().stream()
+                .anyMatch(stmt -> stmt.getObject().isResource()
+                        && stmt.getObject().asResource().getURI()
+                               .equals(TurtleExportService.BDQCRIT_NS + "NotEmpty"));
+        assertTrue(found, "hasCriterion should reference bdqcrit:NotEmpty as a resource");
+    }
+
+    @Test
+    void testBuildModelEnhancementIsResourceForAmendment() {
+        ProjectState state = new ProjectState();
+        state.getUseCaseDraft().setName("Amend UC");
+        TestDraft draft = new TestDraft();
+        draft.setLabel("AMENDMENT_TAXON_STANDARDIZED");
+        draft.setType(org.filteredpush.bdq.usecasebuilder.model.TestType.AMENDMENT);
+        draft.setCriterionOrEnhancement("Standardized");
+        state.addNewTestDraft(draft);
+
+        Model model = service.buildModel(state, false, null);
+        org.apache.jena.rdf.model.Property hasEnh =
+                model.createProperty(BdqFfdq.NS + "hasEnhancement");
+        boolean found = model.listStatements(null, hasEnh, (org.apache.jena.rdf.model.RDFNode) null)
+                .toList().stream()
+                .anyMatch(stmt -> stmt.getObject().isResource()
+                        && stmt.getObject().asResource().getURI()
+                               .equals(TurtleExportService.BDQENH_NS + "Standardized"));
+        assertTrue(found, "hasEnhancement should reference bdqenh:Standardized as a resource");
+    }
+
+    @Test
+    void testResolveVocabTermLocalName() {
+        org.apache.jena.rdf.model.Model model = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+        model.setNsPrefix("bdqdim", TurtleExportService.BDQDIM_NS);
+        org.apache.jena.rdf.model.Resource r =
+                TurtleExportService.resolveVocabTerm(model, "Completeness", TurtleExportService.BDQDIM_NS);
+        assertEquals(TurtleExportService.BDQDIM_NS + "Completeness", r.getURI());
+    }
+
+    @Test
+    void testResolveVocabTermPrefixedName() {
+        org.apache.jena.rdf.model.Model model = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+        model.setNsPrefix("bdqcrit", TurtleExportService.BDQCRIT_NS);
+        org.apache.jena.rdf.model.Resource r =
+                TurtleExportService.resolveVocabTerm(model, "bdqcrit:NotEmpty", TurtleExportService.BDQDIM_NS);
+        assertEquals(TurtleExportService.BDQCRIT_NS + "NotEmpty", r.getURI());
+    }
+
+    @Test
+    void testResolveVocabTermFullUri() {
+        org.apache.jena.rdf.model.Model model = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+        String fullUri = TurtleExportService.BDQDIM_NS + "Resolution";
+        org.apache.jena.rdf.model.Resource r =
+                TurtleExportService.resolveVocabTerm(model, fullUri, TurtleExportService.BDQDIM_NS);
+        assertEquals(fullUri, r.getURI());
+    }
+
+    // -----------------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------------
 

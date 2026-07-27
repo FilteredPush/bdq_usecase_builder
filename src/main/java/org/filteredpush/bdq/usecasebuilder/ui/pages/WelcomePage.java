@@ -1,5 +1,7 @@
 package org.filteredpush.bdq.usecasebuilder.ui.pages;
 
+import org.filteredpush.bdq.usecasebuilder.catalog.TestCatalogEntry;
+import org.filteredpush.bdq.usecasebuilder.catalog.TestCatalogService;
 import org.filteredpush.bdq.usecasebuilder.model.InformationElementRef;
 import org.filteredpush.bdq.usecasebuilder.model.ProjectState;
 import org.filteredpush.bdq.usecasebuilder.model.UseCaseDraft;
@@ -49,16 +51,19 @@ public class WelcomePage extends WizardPage {
     private final ValidationService validationService = new ValidationService();
     private final ProjectStateSerializer serializer = new ProjectStateSerializer();
     private final RdfProjectLoader rdfLoader = new RdfProjectLoader();
+    private final TestCatalogService catalogService;
 
     private List<UseCaseDraft> loadedUseCases;
 
     /**
      * Creates the welcome page.
      *
-     * @param state shared project state
+     * @param state          shared project state
+     * @param catalogService test catalog service to populate with tests loaded from RDF
      */
-    public WelcomePage(ProjectState state) {
+    public WelcomePage(ProjectState state, TestCatalogService catalogService) {
         super(state);
+        this.catalogService = catalogService;
         buildUi();
     }
 
@@ -180,10 +185,11 @@ public class WelcomePage extends WizardPage {
         loadRdfC.gridx = 1; loadRdfC.gridy = row++;
         loadRdfC.anchor = GridBagConstraints.WEST;
         loadRdfC.insets = new Insets(0, 0, 6, 6);
-        JButton loadRdfButton = new JButton("Load use cases from RDF");
+        JButton loadRdfButton = new JButton("Load use cases and tests from RDF");
         loadRdfButton.setToolTipText(
-                "Parse the RDF source to find use cases; the selected one will be used as the starting use case");
-        loadRdfButton.addActionListener(e -> loadUseCasesFromRdf());
+                "Parse the RDF source to find use cases and tests; "
+                + "tests are added to the catalog, the selected use case pre-fills step 2");
+        loadRdfButton.addActionListener(e -> loadFromRdf());
         form.add(loadRdfButton, loadRdfC);
 
         // Row: Existing use case selector (populated after loading RDF)
@@ -319,7 +325,7 @@ public class WelcomePage extends WizardPage {
         }
     }
 
-    private void loadUseCasesFromRdf() {
+    private void loadFromRdf() {
         String rdfSrc = rdfSourceField.getText().trim();
         if (rdfSrc.isEmpty()) {
             JOptionPane.showMessageDialog(this,
@@ -328,6 +334,7 @@ public class WelcomePage extends WizardPage {
                     JOptionPane.WARNING_MESSAGE);
             return;
         }
+        // Load use cases
         loadedUseCases = rdfLoader.loadUseCases(rdfSrc);
         DefaultComboBoxModel<String> comboModel = new DefaultComboBoxModel<>();
         comboModel.addElement("(none – start fresh)");
@@ -335,20 +342,23 @@ public class WelcomePage extends WizardPage {
             comboModel.addElement(uc.getName() != null ? uc.getName() : "(unnamed use case)");
         }
         existingUseCaseCombo.setModel(comboModel);
-        if (loadedUseCases.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    "No use cases found in the RDF document.\n" + rdfSrc,
-                    "No use cases",
-                    JOptionPane.INFORMATION_MESSAGE);
-        } else {
-            JOptionPane.showMessageDialog(this,
-                    "Found " + loadedUseCases.size() + " use case(s).\n"
-                    + "Select one from the drop-down to use as your starting use case.",
-                    "Use cases loaded",
-                    JOptionPane.INFORMATION_MESSAGE);
+        // Load tests and inject into catalog
+        List<TestCatalogEntry> loadedTests = rdfLoader.loadTestEntries(rdfSrc);
+        if (catalogService != null) {
+            catalogService.addEntries(loadedTests);
         }
-        // Also store the RDF source in state
+        // Store the RDF source in state
         state.setAdditionalRdfSource(rdfSrc);
+        // Report results
+        StringBuilder msg = new StringBuilder();
+        msg.append("Loaded from: ").append(rdfSrc).append("\n\n");
+        msg.append("Use cases found: ").append(loadedUseCases.size()).append("\n");
+        msg.append("Tests loaded into catalog: ").append(loadedTests.size()).append("\n");
+        if (!loadedUseCases.isEmpty()) {
+            msg.append("\nSelect a use case from the drop-down to use as your starting use case.");
+        }
+        JOptionPane.showMessageDialog(this, msg.toString(),
+                "RDF load complete", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void applySelectedUseCaseToState() {

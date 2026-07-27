@@ -115,8 +115,10 @@ public class NewTestPage extends WizardPage {
     private DefaultListModel<String> coverageListModel;
     private JList<String> coverageList;
     private JPanel testDetailsPanel;
-    /** Panel containing IE quick-insert buttons; rebuilt on each page enter. */
+    /** Panel containing IE quick-insert controls (bdqval buttons + IE picklist + Insert button). */
     private JPanel ieInsertPanel;
+    /** Combo box in the IE insert panel, populated from the current test's IEs. */
+    private JComboBox<String> ieInsertCombo;
 
     private boolean updatingForm = false;
     private boolean updatingLabel = false;
@@ -128,7 +130,6 @@ public class NewTestPage extends WizardPage {
     private static final Set<String> PREREQUISITE_STATUSES = Set.of(
             "INTERNAL_PREREQUISITES_NOT_MET",
             "EXTERNAL_PREREQUISITES_NOT_MET");
-    private static final float IE_BUTTON_FONT_SIZE = 11.0f;
     /** Pre-compiled pattern for detecting bdqffdq: parameter references in expected responses. */
     private static final java.util.regex.Pattern PARAM_PATTERN =
             java.util.regex.Pattern.compile("\\bbdqffdq:[A-Za-z]*[Pp]arameter\\b");
@@ -163,7 +164,7 @@ public class NewTestPage extends WizardPage {
         }
         refreshPicklists();
         refreshCoverageList();
-        rebuildIeInsertPanel();
+        updateIeInsertCombo();
         clearForm();
         setTestDetailsEnabled(false);
     }
@@ -352,7 +353,10 @@ public class NewTestPage extends WizardPage {
         // Row 6: IE quick-insert helpers
         GridBagConstraints lc = labelConstraints(row);
         testDetailsPanel.add(new JLabel("Insert into condition:"), lc);
-        ieInsertPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        // Build the IE insert panel once; its combo is populated dynamically
+        ieInsertCombo = new JComboBox<>();
+        ieInsertCombo.setToolTipText("Select an IE from this test to insert into the condition field");
+        ieInsertPanel = buildIeInsertPanel();
         GridBagConstraints fc = fieldConstraints(row++);
         testDetailsPanel.add(ieInsertPanel, fc);
 
@@ -450,6 +454,7 @@ public class NewTestPage extends WizardPage {
         typeCombo.addActionListener(e -> {
             refreshCriterionPicklistByType();
             applySuggestions();
+            updateSuggestButtonState();
         });
 
         // IE add combo: trigger suggestions on every keystroke in the editor
@@ -609,6 +614,8 @@ public class NewTestPage extends WizardPage {
     private void addNewDraft() {
         saveCurrentDraft();
         TestDraft draft = new TestDraft();
+        draft.setType(TestType.VALIDATION);
+        draft.setResourceType(ResourceType.SINGLE_RECORD);
         listModel.addElement(draft);
         draftList.setSelectedIndex(listModel.size() - 1);
         loadDraftIntoForm(draft);
@@ -677,7 +684,9 @@ public class NewTestPage extends WizardPage {
         hasSourceAuthorityCheck.setSelected(draft.isHasSourceAuthority());
         hasParametersCheck.setSelected(draft.isHasParameters());
         updatingForm = false;
+        updateIeInsertCombo();
         updateSaveButtonState();
+        updateSuggestButtonState();
     }
 
     private void saveCurrentDraft() {
@@ -735,7 +744,9 @@ public class NewTestPage extends WizardPage {
         hasSourceAuthorityCheck.setSelected(false);
         hasParametersCheck.setSelected(false);
         updatingForm = false;
+        updateIeInsertCombo();
         updateSaveButtonState();
+        updateSuggestButtonState();
     }
 
     private void refreshPicklists() {
@@ -848,6 +859,8 @@ public class NewTestPage extends WizardPage {
         }
         // Trigger label suggestion after adding an IE
         applySuggestions();
+        updateIeInsertCombo();
+        updateSuggestButtonState();
     }
 
     /** Removes the selected items from the given list. */
@@ -858,6 +871,8 @@ public class NewTestPage extends WizardPage {
         }
         // Refresh label suggestion (first IE may have changed)
         applySuggestions();
+        updateIeInsertCombo();
+        updateSuggestButtonState();
     }
 
     private boolean containsItem(DefaultListModel<String> model, String item) {
@@ -988,6 +1003,23 @@ public class NewTestPage extends WizardPage {
         }
     }
 
+    /**
+     * Updates the Suggest button enabled state.
+     * The button is enabled only when a draft is selected AND
+     * the test type and resource type are chosen AND at least one IE is present.
+     */
+    private void updateSuggestButtonState() {
+        if (suggestLabelsButton == null) {
+            return;
+        }
+        boolean draftSelected = draftList != null && draftList.getSelectedValue() != null;
+        boolean hasType = typeCombo != null && typeCombo.getSelectedItem() != null;
+        boolean hasResourceType = resourceTypeCombo != null && resourceTypeCombo.getSelectedItem() != null;
+        boolean hasIe = (actedUponListModel != null && !actedUponListModel.isEmpty())
+                || (consultedListModel != null && !consultedListModel.isEmpty());
+        suggestLabelsButton.setEnabled(draftSelected && hasType && hasResourceType && hasIe);
+    }
+
     // -----------------------------------------------------------------------
     // Auto-detection of source authority / parameter flags from expected response
     // -----------------------------------------------------------------------
@@ -1016,38 +1048,73 @@ public class NewTestPage extends WizardPage {
     }
 
     // -----------------------------------------------------------------------
-    // IE quick-insert panel (rebuilt on page enter)
+    // IE quick-insert panel
     // -----------------------------------------------------------------------
 
-    private void rebuildIeInsertPanel() {
-        if (ieInsertPanel == null) {
-            return;
-        }
-        ieInsertPanel.removeAll();
-        // bdqval terms first
+    /**
+     * Builds the IE quick-insert panel once.  Contains:
+     * <ul>
+     *   <li>buttons for {@code bdqval:Empty} and {@code bdqval:NotEmpty}</li>
+     *   <li>a picklist (JComboBox) of IEs associated with the <em>current</em> test</li>
+     *   <li>an "Insert" button that appends the selected IE to the condition field</li>
+     * </ul>
+     * The combo's contents are refreshed via {@link #updateIeInsertCombo()} whenever the
+     * test's IE lists change.
+     */
+    private JPanel buildIeInsertPanel() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        // Fixed bdqval buttons
         for (String val : List.of("bdqval:Empty", "bdqval:NotEmpty")) {
             JButton b = new JButton(val);
-            b.setFont(b.getFont().deriveFont(IE_BUTTON_FONT_SIZE));
+            b.setFont(b.getFont().deriveFont(11.0f));
             b.setToolTipText("Append \"" + val + "\" to the IF condition");
             final String token = val;
             b.addActionListener(e -> appendToCondition(token));
-            ieInsertPanel.add(b);
+            panel.add(b);
         }
-        // IE terms from the use case
-        for (InformationElementRef ref : state.getInformationElements()) {
-            String qname = ref.getQname();
-            if (qname == null || qname.trim().isEmpty()) {
-                continue;
+        // IE picklist
+        ieInsertCombo.setPreferredSize(new java.awt.Dimension(200,
+                ieInsertCombo.getPreferredSize().height));
+        panel.add(ieInsertCombo);
+        JButton insertIeButton = new JButton("Insert");
+        insertIeButton.setFont(insertIeButton.getFont().deriveFont(11.0f));
+        insertIeButton.setToolTipText("Append the selected IE to the IF condition field");
+        insertIeButton.addActionListener(e -> {
+            Object sel = ieInsertCombo.getSelectedItem();
+            if (sel != null && !sel.toString().isEmpty()) {
+                appendToCondition(sel.toString());
             }
-            JButton b = new JButton(qname.trim());
-            b.setFont(b.getFont().deriveFont(IE_BUTTON_FONT_SIZE));
-            b.setToolTipText("Append \"" + qname.trim() + "\" to the IF condition");
-            final String token = qname.trim();
-            b.addActionListener(e -> appendToCondition(token));
-            ieInsertPanel.add(b);
+        });
+        panel.add(insertIeButton);
+        return panel;
+    }
+
+    /**
+     * Refreshes the IE picklist combo in the insert panel from the current test's
+     * ActedUpon and Consulted lists.  Call whenever IEs are added/removed or a new
+     * draft is loaded.
+     */
+    private void updateIeInsertCombo() {
+        if (ieInsertCombo == null) {
+            return;
         }
-        ieInsertPanel.revalidate();
-        ieInsertPanel.repaint();
+        Object previous = ieInsertCombo.getSelectedItem();
+        ieInsertCombo.removeAllItems();
+        // ActedUpon first, then Consulted (deduplication by insertion order)
+        Set<String> seen = new LinkedHashSet<>();
+        for (int i = 0; i < actedUponListModel.size(); i++) {
+            seen.add(actedUponListModel.get(i));
+        }
+        for (int i = 0; i < consultedListModel.size(); i++) {
+            seen.add(consultedListModel.get(i));
+        }
+        for (String ie : seen) {
+            ieInsertCombo.addItem(ie);
+        }
+        // Restore previous selection if still present
+        if (previous != null) {
+            ieInsertCombo.setSelectedItem(previous);
+        }
     }
 
     private void appendToCondition(String token) {
@@ -1227,7 +1294,7 @@ public class NewTestPage extends WizardPage {
         removeActedUponButton.setEnabled(enabled);
         removeConsultedButton.setEnabled(enabled);
         labelField.setEnabled(enabled);
-        suggestLabelsButton.setEnabled(enabled);
+        suggestLabelsButton.setEnabled(false); // controlled by updateSuggestButtonState()
         prefLabelField.setEnabled(enabled);
         dimensionCombo.setEnabled(enabled);
         criterionCombo.setEnabled(enabled);
@@ -1247,6 +1314,7 @@ public class NewTestPage extends WizardPage {
         moveDownButton.setEnabled(enabled);
         if (enabled) {
             updateSaveButtonState(); // re-evaluate based on label content
+            updateSuggestButtonState(); // re-evaluate based on IE presence
         } else {
             saveDraftButton.setEnabled(false);
         }
