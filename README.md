@@ -7,7 +7,7 @@ Application to build an RDF description of a use case with a set of included tes
 `bdq_usecase_builder` is a Java application that helps you create BDQ (Biodiversity Data Quality) use cases and associated tests following the [BDQ Framework](https://github.com/tdwg/bdq). The application offers two modes:
 
 1. **Console wizard** – a classic text-based menu (the original interface).
-2. **Swing wizard UI** – a graphical step-by-step wizard (Phase 1 MVP, new in this release).
+2. **Swing wizard UI** – a graphical guided authoring workbench (Phase 3, latest).
 
 ---
 
@@ -32,24 +32,42 @@ This produces a shaded (fat) jar at `target/bdq-usecase-builder-<version>-SNAPSH
 java -jar target/bdq-usecase-builder-*-SNAPSHOT.jar --gui
 ```
 
-The wizard will open a desktop window and guide you through:
+The workbench opens a large desktop window (default 1400×900, resizable; size and position are remembered across sessions) and guides you through:
 
 1. **Welcome / Project Setup** – default output is `output/` under the launch directory; review or change it.
 2. **Define Use Case** – provide a name, description, and fitness-for-use requirements.
 3. **Information Elements** – pick and categorise Darwin Core, Audiovisual Core, and custom vocabulary terms (ActedUpon or Consulted).
 4. **Select Existing Tests** – tests are filtered by selected information elements by default (with optional show-all); selecting tests can backfill additional information elements.
-5. **Define New Tests** – author information-element-driven test drafts, with criterion/enhancement vocab picklists and structured expected-response clause building (ordered IF/THEN + final ELSE).
+5. **Define New Tests** – author information-element-driven test drafts, with criterion/enhancement vocab picklists and structured expected-response clause building (ordered IF/THEN + final ELSE). Each test can have **multiple** ActedUpon and Consulted information elements. Labels and preferred labels are auto-suggested from the test type, IE, and criterion (with override support).
 6. **Authorities & Parameters** – define `hasAuthoritiesDefaults` and parameter defaults with structured editors and validation.
-7. **Gap Analysis Matrix** – link requirements/information elements to existing and new tests, track coverage status (`Covered`, `Partially Covered`, `Gap`), and record rationale.
+7. **Gap Analysis Matrix** – redesigned two-pane model: left shows requirements/IEs, right shows available and linked tests. Explicit **Add Existing Test / Add New Draft Test / Remove Link / Add All / Remove All** buttons. Color-coded rows (green = Covered, amber = Partially Covered, red = Gap). Search/filter for tests. Coverage counts shown at row and overall level.
 8. **Conformance CSV Data** – generate and edit conformance starter rows from expected-response clauses.
-9. **Review & Export** – review a summary of everything and export the output files.
+9. **Review, Validate & Export** – run SHACL-aligned pre-export validation, choose export mode, and export.
 
-Clicking **Finish** or **Export Now** on the last page writes:
+### Phase sidebar (cyclical navigation)
+
+The left sidebar lists all nine phases with their current completion status:
+
+| Status | Meaning |
+|---|---|
+| Not started | The page has not been visited yet |
+| In progress | The page has been visited but may be incomplete |
+| Ready | Required data is filled in |
+| Needs attention | There are gaps or issues |
+
+Click any phase button to jump directly to that phase. Navigating backward or jumping never loses state. Going forward with **Next** validates required fields.
+
+### Export output files
+
+Clicking **Export Now** (Turtle) or **Export (Markdown + JSON)** on the Review page writes to the configured output directory:
 
 | File | Contents |
 |---|---|
-| `usecase_summary.md` | Human-readable Markdown summary of the use case package (including gap matrix) |
-| `project_state.json` | Machine-readable JSON snapshot of the full project state |
+| `usecase_new.ttl` | RDF/Turtle – new use case + new tests only (Minimal mode) |
+| `usecase_with_existing.ttl` | RDF/Turtle – new use case + new tests + selected existing test stubs (Include Existing mode) |
+| `validation_report.md` | Human-readable SHACL-aligned validation report |
+| `usecase_summary.md` | Markdown summary of the use case package (including gap matrix) |
+| `project_state.json` | JSON snapshot of the full project state |
 | `conformance_*.csv` | One conformance CSV per drafted new test |
 | `conformance_all_tests.csv` | Combined conformance CSV across drafted new tests |
 
@@ -74,35 +92,115 @@ Options:
 
 ---
 
-## Phase 2 scope
+## Phase 3 scope
 
-The Swing wizard UI now includes the Phase 1 baseline plus Phase 2 enhancements.
+Phase 3 delivers a guided-but-cyclical authoring workbench with improved usability, multi-IE test authoring, SHACL-aware Turtle export, and robust acceptance tests.
 
-### What is included
+### Guided cyclical workflow (B1)
 
-- Swing wizard shell with card-based page navigation (Back / Next / Finish / Cancel).
-- All nine wizard pages listed above.
-- Output directory defaults to `<launch-directory>/output` and can be changed in the welcome page.
-- In-memory domain model: `ProjectState`, `UseCaseDraft`, `InformationElementRef`, `TestDraft`.
-- Enumerations: `TestType`, `InfoElementRole`, `ResourceType`.
-- `ValidationService` – required-field checks for each page.
-- `ExportService` – writes a Markdown summary and a JSON state file.
-- `TestCatalogService` + bundled CSV catalog of representative BDQ tests for the selection page.
-- `VocabularyService` + bundled local controlled vocabularies: `bdqdim`, `bdqcrit`, `bdqenh`, `bdqval`, `bdquc`, `dwc`, `ac`.
-- Information-element picker supports Darwin Core, Audiovisual Core, and user-configurable custom vocabularies.
-- Expanded contextual guidance text/tooltips on each wizard page (what, why, conventions).
-- Existing-test selection is information-element aware, with optional all-tests view and selected-test IE backfill into the information-elements step.
-- New-test authoring includes information-element coverage indicators and structured expected-response clause helpers (ordered, editable clauses).
-- Dedicated gap-analysis matrix page with requirement-to-test mapping and coverage counts.
-- Dedicated authority/parameter editor with validation for URI-only, URI+API, and regex conventions.
-- Dedicated conformance CSV editor with generated starter rows plus editable edge-case rows.
-- Unit tests for model, validation, and export services.
+- Nine tutorial-aligned phases with completion status indicators in the sidebar.
+- Users can navigate backward/forward freely and jump to any phase without losing state.
+- Phase status: **Not started / In progress / Ready / Needs attention**.
+- Going backward or jumping saves state from the current page first.
 
-### Still planned for later phases
+### Window size and preferences (B2)
 
-- RDF/Turtle export.
-- Richer ontology validation.
-- Refresh of the test catalog from a remote source.
+- Default window size 1400×900 (resizable).
+- Window size and position persisted via Java `Preferences` API and restored on next launch.
+
+### Evaluation matrix redesign (B3)
+
+The gap analysis matrix was redesigned to be much more usable:
+
+- **Two-pane model**: left = requirements/IE rows (matrix); right = available and linked tests.
+- **Explicit buttons**: Add Existing Test →, Add New Draft Test →, ← Remove Link, Add All →, ← Remove All.
+- **Color-coded rows**: green (Covered), amber (Partially Covered), red (Gap).
+- **Search/filter**: separate search fields for the requirements table and for available tests.
+- **Coverage summary**: shows `X/N covered | K gap(s)` with color indicator.
+
+### Multi-valued information elements (B4)
+
+`TestDraft` now supports:
+- `actedUponElements` – list of ActedUpon terms (previously single-valued).
+- `consultedElements` – list of Consulted terms.
+- `getAllInformationElements()` – combined unique list for convenience.
+- Legacy `informationElement` field preserved for backward compatibility.
+
+### Convention-aware label suggestions (B5)
+
+`LabelSuggestionService` auto-suggests:
+- `rdfs:label` following `TESTTYPE_INFORMATIONELEMENT_CRITERION` pattern (e.g., `VALIDATION_SCIENTIFICNAME_NOTEMPTY`).
+- `skos:prefLabel` following `{TypeName} {localName} {criterion}` pattern.
+
+Suggestions update when upstream fields (type, IE, criterion) change, **unless** the user has manually overridden the field (tracked by `labelUserOverridden` / `prefLabelUserOverridden` flags). Set the override flag to `true` to lock the value; clear it to resume auto-suggestion.
+
+### Expected response builder tokens (B6)
+
+The `ExpectedResponseClause` supports structured clause composition for common BDQ patterns:
+
+| Pattern | Status value |
+|---|---|
+| External prerequisites not met | `EXTERNAL_PREREQUISITES_NOT_MET` |
+| Internal prerequisites not met | `INTERNAL_PREREQUISITES_NOT_MET` |
+| Compliant | `RUN_HAS_RESULT` + result `COMPLIANT` |
+| Not compliant | `RUN_HAS_RESULT` + result `NOT_COMPLIANT` |
+| Amended / Not amended | `AMENDED` / `NOT_AMENDED` |
+
+Use `getAllInformationElements()` on the draft to populate token pickers for clause conditions.
+
+### RDF/Turtle export (B8)
+
+`TurtleExportService` supports two modes:
+
+**Minimal mode** (`usecase_new.ttl`):
+- Includes only the newly authored Use Case resource, its Policy, and newly authored tests.
+- Does not include existing tests that were merely selected/referenced.
+
+**Include Existing mode** (`usecase_with_existing.ttl`):
+- Includes everything from Minimal mode, plus stubs for all selected existing tests.
+- Existing test stubs include type and label from the bundled catalog when available.
+
+The Turtle output uses stable namespace prefixes (`bdqffdq:`, `bdqtest:`, `dwc:`, etc.) and is serialized by Apache Jena.
+
+### SHACL-aligned pre-export validation (B9)
+
+`ShaclValidationService` checks the project state against bdqffdq-aligned constraints:
+
+**Blocking errors** (prevent export by default):
+- Use case has no name (`rdfs:label`).
+- A new test has no type (`bdqffdq:DataQualityNeed` subclass).
+- A new test has neither `rdfs:label` nor `skos:prefLabel`.
+
+**Warnings** (informational; do not block export):
+- Use case has no description.
+- Use case has no fitness-for-use requirements text.
+- No information elements defined.
+- A test has no information elements, no expected response, no dimension, or no criterion/enhancement.
+- No tests defined or selected.
+
+The **Review, Validate & Export** page shows:
+- A **Run Validation** button that displays findings in categorized form.
+- The **Export Now** button is blocked when blocking errors exist (unless the override checkbox is enabled).
+- A **validation_report.md** file is written alongside the Turtle output.
+
+---
+
+## Multi-information-element test authoring
+
+When defining a new test, you can assign **multiple** ActedUpon and Consulted information elements:
+
+```java
+TestDraft draft = new TestDraft();
+draft.addActedUponElement("dwc:scientificName");
+draft.addActedUponElement("dwc:kingdom");
+draft.addConsultedElement("dwc:taxonRank");
+// Get all IEs (deduplicated)
+List<String> all = draft.getAllInformationElements(); // [scientificName, kingdom, taxonRank]
+```
+
+The Turtle export maps each element to a separate `bdqffdq:InformationElement` resource with `ActedUpon` or `Consulted` subtype.
+
+---
 
 ## Custom vocabulary configuration
 
@@ -122,6 +220,19 @@ The repository includes a starter file at `vocab/custom-vocabularies.properties`
 
 ---
 
+## Phase 2 scope (prior release)
+
+The Swing wizard UI included the Phase 1 baseline plus Phase 2 enhancements:
+- Gap-analysis matrix page.
+- Expected-response clause builder.
+- Authority/parameter editor.
+- Conformance CSV generator.
+- Vocabulary picklists (bdqcrit, bdqenh, bdqval, bdquc, bdqdim).
+- Darwin Core, Audiovisual Core, and user-configurable custom vocabulary pickers.
+- Guidance text on every page.
+
+---
+
 ## Project structure
 
 ```
@@ -137,7 +248,7 @@ src/main/java/org/filteredpush/bdq/usecasebuilder/
     ProjectState.java
     UseCaseDraft.java
     InformationElementRef.java
-    TestDraft.java
+    TestDraft.java                Phase 3: multi-valued actedUpon/consulted, label override flags
     ExpectedResponseClause.java
     AuthorityDefault.java
     AuthorityPatternType.java
@@ -148,20 +259,23 @@ src/main/java/org/filteredpush/bdq/usecasebuilder/
     InfoElementRole.java
     ResourceType.java
   service/
-    ValidationService.java
+    ValidationService.java        Updated for multi-valued IE check
     ExportService.java
     GapAnalysisService.java
     ExpectedResponseClauseService.java
     ConformanceCsvService.java
     VocabularyService.java
     InformationElementTermService.java
+    LabelSuggestionService.java   Phase 3: convention-aware auto-suggestions
+    TurtleExportService.java      Phase 3: RDF/Turtle export (Minimal + Include-Existing)
+    ShaclValidationService.java   Phase 3: SHACL-aligned pre-export validation
   catalog/
     TestCatalogEntry.java
     TestCatalogService.java
   ui/
-    WizardFrame.java
-    WizardController.java
-    WizardPage.java
+    WizardFrame.java              Phase 3: phase sidebar, 1400×900 default, prefs persistence
+    WizardController.java         Phase 3: jumpToPage() for cyclical navigation
+    WizardPage.java               Phase 3: CompletionStatus enum, markVisited(), getCompletionStatus()
     pages/
       WelcomePage.java
       UseCasePage.java
@@ -169,9 +283,9 @@ src/main/java/org/filteredpush/bdq/usecasebuilder/
       ExistingTestsPage.java
       NewTestPage.java
       ParameterDefaultsPage.java
-      GapAnalysisPage.java
+      GapAnalysisPage.java        Phase 3: two-pane redesign, search/filter, bulk ops, color coding
       ConformanceDataPage.java
-      ReviewExportPage.java
+      ReviewExportPage.java       Phase 3: SHACL validation UI, Turtle export mode toggle
 src/main/resources/
   catalog/bdqtest_catalog.csv     Bundled BDQ test catalog
   catalog/vocabulary/*.csv        Bundled controlled vocabulary picklists
@@ -184,3 +298,4 @@ src/main/resources/
 ```bash
 mvn test
 ```
+

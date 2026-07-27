@@ -11,15 +11,22 @@ import java.util.List;
  * <p>Captures the minimal set of descriptors needed for Phase 1: label
  * anatomy, preferred label, test type, resource type, dimension,
  * criterion/enhancement, and the expected response narrative. Phase 2 extends
- * this with optional use-case references and parameter/default descriptors.</p>
+ * this with optional use-case references and parameter/default descriptors.
+ * Phase 3 adds multi-valued actedUpon/consulted information element lists and
+ * label-override tracking for auto-suggestion.</p>
  */
 public class TestDraft {
 
     private String label;
+    private boolean labelUserOverridden = false;
     private String prefLabel;
+    private boolean prefLabelUserOverridden = false;
     private TestType type;
     private ResourceType resourceType;
+    /** Legacy single-element field kept for backward-compat; use actedUponElements when possible. */
     private String informationElement;
+    private final List<String> actedUponElements = new ArrayList<>();
+    private final List<String> consultedElements = new ArrayList<>();
     private String dimension;
     private String criterionOrEnhancement;
     private String useCaseReference;
@@ -52,6 +59,16 @@ public class TestDraft {
         this.label = label;
     }
 
+    /** Returns {@code true} if the user has manually edited the label (suppresses auto-suggestion). */
+    public boolean isLabelUserOverridden() {
+        return labelUserOverridden;
+    }
+
+    /** Sets whether the label has been manually overridden by the user. */
+    public void setLabelUserOverridden(boolean labelUserOverridden) {
+        this.labelUserOverridden = labelUserOverridden;
+    }
+
     /** Returns the human-readable preferred label (skos:prefLabel). */
     public String getPrefLabel() {
         return prefLabel;
@@ -60,6 +77,16 @@ public class TestDraft {
     /** Sets the human-readable preferred label. */
     public void setPrefLabel(String prefLabel) {
         this.prefLabel = prefLabel;
+    }
+
+    /** Returns {@code true} if the user has manually edited the prefLabel (suppresses auto-suggestion). */
+    public boolean isPrefLabelUserOverridden() {
+        return prefLabelUserOverridden;
+    }
+
+    /** Sets whether the prefLabel has been manually overridden by the user. */
+    public void setPrefLabelUserOverridden(boolean prefLabelUserOverridden) {
+        this.prefLabelUserOverridden = prefLabelUserOverridden;
     }
 
     /** Returns the test type (Validation, Measure, Amendment, or Issue). */
@@ -90,6 +117,77 @@ public class TestDraft {
     /** Sets the information element this test targets. */
     public void setInformationElement(String informationElement) {
         this.informationElement = informationElement;
+    }
+
+    /**
+     * Returns the list of ActedUpon information elements for this test.
+     * These are the primary elements the test acts upon.
+     */
+    public List<String> getActedUponElements() {
+        return Collections.unmodifiableList(actedUponElements);
+    }
+
+    /** Replaces the list of ActedUpon information elements. */
+    public void setActedUponElements(List<String> elements) {
+        actedUponElements.clear();
+        if (elements != null) {
+            actedUponElements.addAll(elements);
+        }
+    }
+
+    /** Adds an ActedUpon information element. */
+    public void addActedUponElement(String element) {
+        if (element != null && !element.trim().isEmpty() && !actedUponElements.contains(element)) {
+            actedUponElements.add(element);
+        }
+    }
+
+    /** Removes an ActedUpon information element. */
+    public void removeActedUponElement(String element) {
+        actedUponElements.remove(element);
+    }
+
+    /**
+     * Returns the list of Consulted information elements for this test.
+     * These are elements consulted but not directly modified by the test.
+     */
+    public List<String> getConsultedElements() {
+        return Collections.unmodifiableList(consultedElements);
+    }
+
+    /** Replaces the list of Consulted information elements. */
+    public void setConsultedElements(List<String> elements) {
+        consultedElements.clear();
+        if (elements != null) {
+            consultedElements.addAll(elements);
+        }
+    }
+
+    /** Adds a Consulted information element. */
+    public void addConsultedElement(String element) {
+        if (element != null && !element.trim().isEmpty() && !consultedElements.contains(element)) {
+            consultedElements.add(element);
+        }
+    }
+
+    /** Removes a Consulted information element. */
+    public void removeConsultedElement(String element) {
+        consultedElements.remove(element);
+    }
+
+    /**
+     * Returns all information elements (both ActedUpon and Consulted) as a
+     * combined list, for convenience in contexts where role is not relevant.
+     */
+    public List<String> getAllInformationElements() {
+        List<String> all = new ArrayList<>();
+        all.addAll(actedUponElements);
+        for (String c : consultedElements) {
+            if (!all.contains(c)) {
+                all.add(c);
+            }
+        }
+        return Collections.unmodifiableList(all);
     }
 
     /**
