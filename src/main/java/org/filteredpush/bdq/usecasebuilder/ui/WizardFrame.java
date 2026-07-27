@@ -6,6 +6,7 @@ import org.filteredpush.bdq.usecasebuilder.service.VocabularyService;
 import org.filteredpush.bdq.usecasebuilder.ui.pages.ExistingTestsPage;
 import org.filteredpush.bdq.usecasebuilder.ui.pages.InformationElementsPage;
 import org.filteredpush.bdq.usecasebuilder.ui.pages.NewTestPage;
+import org.filteredpush.bdq.usecasebuilder.ui.pages.ParameterDefaultsPage;
 import org.filteredpush.bdq.usecasebuilder.ui.pages.ReviewExportPage;
 import org.filteredpush.bdq.usecasebuilder.ui.pages.UseCasePage;
 import org.filteredpush.bdq.usecasebuilder.ui.pages.WelcomePage;
@@ -123,7 +124,8 @@ public class WizardFrame extends JFrame {
         pages.add(new UseCasePage(state));
         pages.add(new InformationElementsPage(state, vocabularyService));
         pages.add(new ExistingTestsPage(state, catalogService));
-        pages.add(new NewTestPage(state, vocabularyService));
+        pages.add(new NewTestPage(state, vocabularyService, catalogService));
+        pages.add(new ParameterDefaultsPage(state));
         pages.add(new ReviewExportPage(state));
 
         for (int i = 0; i < pages.size(); i++) {

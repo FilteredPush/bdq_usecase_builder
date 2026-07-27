@@ -20,7 +20,7 @@ import java.util.List;
 import javax.swing.JOptionPane;
 
 /**
- * Wizard page 6 – Review and export.
+ * Wizard page 7 – Review and export.
  *
  * <p>Displays a read-only summary of the entire project state and provides an
  * Export button to write the output artifacts immediately (without leaving the
@@ -157,6 +157,7 @@ public class ReviewExportPage extends WizardPage {
             sb.append("  [").append(i + 1).append("] ").append(td).append('\n');
             sb.append("       Type     : ")
                     .append(td.getType() != null ? td.getType().getDisplayName() : "?").append('\n');
+            sb.append("       Info Elem: ").append(nvl(td.getInformationElement())).append('\n');
             sb.append("       Dimension: ").append(nvl(td.getDimension())).append('\n');
             sb.append("       Criterion: ").append(nvl(td.getCriterionOrEnhancement())).append('\n');
             sb.append("       Use case : ").append(nvl(td.getUseCaseReference())).append('\n');

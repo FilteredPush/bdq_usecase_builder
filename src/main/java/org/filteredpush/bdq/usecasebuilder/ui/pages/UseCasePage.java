@@ -26,7 +26,10 @@ public class UseCasePage extends WizardPage {
 
     private JTextField nameField;
     private JTextArea descriptionArea;
-    private JTextArea fitnessArea;
+    private JTextArea fitnessLeadArea;
+    private JTextArea fitnessPropertiesArea;
+    private boolean updatingFitnessLeadTemplate;
+    private boolean fitnessLeadUserEdited;
 
     private final ValidationService validationService = new ValidationService();
 
@@ -54,7 +57,8 @@ public class UseCasePage extends WizardPage {
         UseCaseDraft draft = state.getUseCaseDraft();
         nameField.setText(nvl(draft.getName()));
         descriptionArea.setText(nvl(draft.getDescription()));
-        fitnessArea.setText(nvl(draft.getFitnessRequirementsText()));
+        loadFitnessClauses(nvl(draft.getFitnessRequirementsText()));
+        ensureFitnessTemplate();
     }
 
     @Override
@@ -62,7 +66,7 @@ public class UseCasePage extends WizardPage {
         UseCaseDraft draft = state.getUseCaseDraft();
         draft.setName(nameField.getText().trim());
         draft.setDescription(descriptionArea.getText().trim());
-        draft.setFitnessRequirementsText(fitnessArea.getText().trim());
+        draft.setFitnessRequirementsText(buildFitnessRequirementsText());
     }
 
     @Override
@@ -104,14 +108,20 @@ public class UseCasePage extends WizardPage {
         descriptionArea.setToolTipText("A paragraph describing what the use case is for");
 
         JLabel fitnessLabel = new JLabel("Fitness-for-use requirements:");
-        fitnessArea = new JTextArea(6, 40);
-        fitnessArea.setLineWrap(true);
-        fitnessArea.setWrapStyleWord(true);
-        fitnessArea.setToolTipText(
-                "Narrative text listing the requirements the data must meet to be fit for this use");
+        fitnessLeadArea = new JTextArea(2, 40);
+        fitnessLeadArea.setLineWrap(true);
+        fitnessLeadArea.setWrapStyleWord(true);
+        fitnessLeadArea.setToolTipText(
+                "Clause 1 (descriptive): Data are fit for use for [use case name] if they...");
+        fitnessPropertiesArea = new JTextArea(5, 40);
+        fitnessPropertiesArea.setLineWrap(true);
+        fitnessPropertiesArea.setWrapStyleWord(true);
+        fitnessPropertiesArea.setToolTipText(
+                "One property per line (a bulleted list will be generated in export text)");
 
         JScrollPane descScroll = new JScrollPane(descriptionArea);
-        JScrollPane fitnessScroll = new JScrollPane(fitnessArea);
+        JScrollPane fitnessLeadScroll = new JScrollPane(fitnessLeadArea);
+        JScrollPane fitnessPropsScroll = new JScrollPane(fitnessPropertiesArea);
 
         JLabel[] labels = {nameLabel, descLabel, fitnessLabel};
 
@@ -122,14 +132,26 @@ public class UseCasePage extends WizardPage {
         JScrollPane formWrapper = buildForm(
                 formTopLabel, nameLabel, nameField,
                 descLabel, descScroll,
-                fitnessLabel, fitnessScroll);
+                fitnessLabel, fitnessLeadScroll, fitnessPropsScroll);
         add(formWrapper, BorderLayout.CENTER);
+
+        nameField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { ensureFitnessTemplate(); }
+            @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { ensureFitnessTemplate(); }
+            @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { ensureFitnessTemplate(); }
+        });
+        fitnessLeadArea.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { markFitnessLeadEdited(); }
+            @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { markFitnessLeadEdited(); }
+            @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { markFitnessLeadEdited(); }
+        });
     }
 
     private JScrollPane buildForm(JLabel introLabel,
                                    JLabel nameLabel, JTextField nameField,
                                    JLabel descLabel, JScrollPane descScroll,
-                                   JLabel fitnessLabel, JScrollPane fitnessScroll) {
+                                   JLabel fitnessLabel, JScrollPane fitnessLeadScroll,
+                                   JScrollPane fitnessPropsScroll) {
         // Use GridBagLayout
         java.awt.Container form = new javax.swing.JPanel(new GridBagLayout());
         form.setBackground(getBackground());
@@ -167,10 +189,80 @@ public class UseCasePage extends WizardPage {
         lc.gridy = 3;
         form.add(fitnessLabel, lc);
         fc.gridy = 3;
+        fc.weighty = 0.25;
+        form.add(fitnessLeadScroll, fc);
+
+        lc.gridy = 4;
+        form.add(new JLabel("Specific properties (one per line):"), lc);
+        fc.gridy = 4;
         fc.weighty = 0.7;
-        form.add(fitnessScroll, fc);
+        form.add(fitnessPropsScroll, fc);
 
         return new JScrollPane(form);
+    }
+
+    private void ensureFitnessTemplate() {
+        String current = fitnessLeadArea.getText().trim();
+        if (current.isEmpty() || !fitnessLeadUserEdited) {
+            updatingFitnessLeadTemplate = true;
+            fitnessLeadArea.setText(defaultFitnessLeadClause());
+            updatingFitnessLeadTemplate = false;
+        }
+    }
+
+    private String defaultFitnessLeadClause() {
+        String name = nameField != null ? nameField.getText().trim() : "";
+        String bracketedName = name.isEmpty() ? "[use case name]" : name;
+        return "Data are fit for use for " + bracketedName + " if they...";
+    }
+
+    private void loadFitnessClauses(String text) {
+        String[] lines = text.split("\\R");
+        StringBuilder lead = new StringBuilder();
+        StringBuilder bullets = new StringBuilder();
+        for (String raw : lines) {
+            String line = raw.trim();
+            if (line.startsWith("-")) {
+                if (bullets.length() > 0) {
+                    bullets.append('\n');
+                }
+                bullets.append(line.substring(1).trim());
+            } else if (!line.isEmpty()) {
+                if (lead.length() > 0) {
+                    lead.append(' ');
+                }
+                lead.append(line);
+            }
+        }
+        fitnessLeadArea.setText(lead.toString());
+        fitnessPropertiesArea.setText(bullets.toString());
+        fitnessLeadUserEdited = !lead.toString().trim().isEmpty();
+    }
+
+    private String buildFitnessRequirementsText() {
+        StringBuilder text = new StringBuilder();
+        String lead = fitnessLeadArea.getText().trim();
+        if (!lead.isEmpty()) {
+            text.append(lead);
+        }
+        String[] propertyLines = fitnessPropertiesArea.getText().split("\\R");
+        for (String propertyLine : propertyLines) {
+            String trimmed = propertyLine.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            if (text.length() > 0) {
+                text.append('\n');
+            }
+            text.append("- ").append(trimmed);
+        }
+        return text.toString().trim();
+    }
+
+    private void markFitnessLeadEdited() {
+        if (!updatingFitnessLeadTemplate) {
+            fitnessLeadUserEdited = !fitnessLeadArea.getText().trim().isEmpty();
+        }
     }
 
     private static String nvl(String s) {

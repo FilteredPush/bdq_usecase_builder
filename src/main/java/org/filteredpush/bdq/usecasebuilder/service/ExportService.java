@@ -149,6 +149,7 @@ public class ExportService {
                     pw.println("- **Resource type:** "
                             + (td.getResourceType() != null
                                     ? td.getResourceType().getDisplayName() : "?"));
+                    pw.println("- **Information element:** " + nvl(td.getInformationElement()));
                     pw.println("- **Dimension:** " + nvl(td.getDimension()));
                     pw.println("- **Criterion/Enhancement:** "
                             + nvl(td.getCriterionOrEnhancement()));
@@ -220,6 +221,7 @@ public class ExportService {
             testMap.put("type", td.getType() != null ? td.getType().name() : null);
             testMap.put("resourceType",
                     td.getResourceType() != null ? td.getResourceType().name() : null);
+            testMap.put("informationElement", td.getInformationElement());
             testMap.put("dimension", td.getDimension());
             testMap.put("criterionOrEnhancement", td.getCriterionOrEnhancement());
             testMap.put("useCaseReference", td.getUseCaseReference());

@@ -2,7 +2,10 @@ package org.filteredpush.bdq.usecasebuilder.ui.pages;
 
 import org.filteredpush.bdq.usecasebuilder.catalog.TestCatalogEntry;
 import org.filteredpush.bdq.usecasebuilder.catalog.TestCatalogService;
+import org.filteredpush.bdq.usecasebuilder.model.InfoElementRole;
+import org.filteredpush.bdq.usecasebuilder.model.InformationElementRef;
 import org.filteredpush.bdq.usecasebuilder.model.ProjectState;
+import org.filteredpush.bdq.usecasebuilder.service.InformationElementTermService;
 import org.filteredpush.bdq.usecasebuilder.ui.WizardPage;
 
 import javax.swing.BorderFactory;
@@ -20,7 +23,10 @@ import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -36,6 +42,10 @@ public class ExistingTestsPage extends WizardPage {
     private ExistingTestsTableModel tableModel;
     private TableRowSorter<ExistingTestsTableModel> sorter;
     private JTextField searchField;
+    private JCheckBox showAllCheck;
+    private JLabel countLabel;
+    private final Set<String> selectedInformationElementTerms = new HashSet<>();
+    private final Map<String, Set<String>> entryTermsByIri = new HashMap<>();
 
     /**
      * Creates the existing tests selection page.
@@ -62,11 +72,19 @@ public class ExistingTestsPage extends WizardPage {
     public void onEnter() {
         Set<String> selected = new HashSet<>(state.getSelectedExistingTestIris());
         tableModel.setSelected(selected);
+        selectedInformationElementTerms.clear();
+        for (InformationElementRef ref : state.getInformationElements()) {
+            if (ref.getQname() != null && !ref.getQname().trim().isEmpty()) {
+                selectedInformationElementTerms.add(ref.getQname().trim());
+            }
+        }
+        applyFilter();
     }
 
     @Override
     public void onLeave() {
         state.setSelectedExistingTestIris(tableModel.getSelectedIris());
+        addInformationElementsFromSelectedTests();
     }
 
     @Override
@@ -95,6 +113,10 @@ public class ExistingTestsPage extends WizardPage {
 
         // Table
         tableModel = new ExistingTestsTableModel(catalogService.getEntries());
+        for (TestCatalogEntry entry : catalogService.getEntries()) {
+            entryTermsByIri.put(entry.getIri(), InformationElementTermService.extractQualifiedTerms(
+                    entry.getLabel(), entry.getPrefLabel()));
+        }
         JTable table = new JTable(tableModel);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setRowHeight(22);
@@ -125,19 +147,76 @@ public class ExistingTestsPage extends WizardPage {
                 });
         searchPanel.add(searchField);
 
-        JLabel countLabel = new JLabel(
-                catalogService.getEntries().size() + " tests in catalog");
+        showAllCheck = new JCheckBox("Show all tests (ignore information-element filter)");
+        showAllCheck.setSelected(false);
+        showAllCheck.addActionListener(e -> applyFilter());
+        searchPanel.add(showAllCheck);
+
+        countLabel = new JLabel();
+        updateCountLabel();
         searchPanel.add(countLabel);
         add(searchPanel, BorderLayout.SOUTH);
     }
 
     private void applyFilter() {
         String text = searchField.getText().trim();
-        if (text.isEmpty()) {
-            sorter.setRowFilter(null);
-        } else {
-            sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text, 1, 2, 3, 4));
+        final boolean showAll = showAllCheck != null && showAllCheck.isSelected();
+        final Set<String> selectedTerms = new HashSet<>(selectedInformationElementTerms);
+        sorter.setRowFilter(new RowFilter<ExistingTestsTableModel, Integer>() {
+            @Override
+            public boolean include(Entry<? extends ExistingTestsTableModel, ? extends Integer> entry) {
+                int row = entry.getIdentifier();
+                TestCatalogEntry catalogEntry = tableModel.getEntryAt(row);
+                if (!showAll && !selectedTerms.isEmpty()) {
+                    Set<String> testTerms = entryTermsByIri.getOrDefault(
+                            catalogEntry.getIri(), Set.of());
+                    if (!InformationElementTermService.matchesAnySelectedTerm(testTerms, selectedTerms)) {
+                        return false;
+                    }
+                }
+                if (text.isEmpty()) {
+                    return true;
+                }
+                String lower = text.toLowerCase(Locale.ROOT);
+                return contains(catalogEntry.getLabel(), lower)
+                        || contains(catalogEntry.getType(), lower)
+                        || contains(catalogEntry.getDimension(), lower)
+                        || contains(catalogEntry.getPrefLabel(), lower);
+            }
+        });
+        updateCountLabel();
+    }
+
+    private void addInformationElementsFromSelectedTests() {
+        Set<String> existing = new HashSet<>();
+        for (InformationElementRef ref : state.getInformationElements()) {
+            if (ref.getQname() != null) {
+                existing.add(ref.getQname().trim().toLowerCase(Locale.ROOT));
+            }
         }
+        for (String iri : state.getSelectedExistingTestIris()) {
+            TestCatalogEntry entry = tableModel.findByIri(iri);
+            if (entry == null) {
+                continue;
+            }
+            Set<String> terms = entryTermsByIri.getOrDefault(entry.getIri(), Set.of());
+            for (String term : terms) {
+                String normalized = term.toLowerCase(Locale.ROOT);
+                if (!existing.contains(normalized)) {
+                    state.addInformationElement(new InformationElementRef(term, InfoElementRole.CONSULTED));
+                    existing.add(normalized);
+                }
+            }
+        }
+    }
+
+    private void updateCountLabel() {
+        int visible = sorter != null ? sorter.getViewRowCount() : catalogService.getEntries().size();
+        countLabel.setText(visible + " shown / " + catalogService.getEntries().size() + " in catalog");
+    }
+
+    private static boolean contains(String value, String lowerQuery) {
+        return value != null && value.toLowerCase(Locale.ROOT).contains(lowerQuery);
     }
 
     // -----------------------------------------------------------------------
@@ -172,6 +251,19 @@ public class ExistingTestsPage extends WizardPage {
                 }
             }
             return result;
+        }
+
+        TestCatalogEntry getEntryAt(int index) {
+            return entries.get(index);
+        }
+
+        TestCatalogEntry findByIri(String iri) {
+            for (TestCatalogEntry entry : entries) {
+                if (entry.getIri().equals(iri)) {
+                    return entry;
+                }
+            }
+            return null;
         }
 
         @Override public int getRowCount() { return entries.size(); }

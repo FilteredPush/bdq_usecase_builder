@@ -12,7 +12,6 @@ import javax.swing.DefaultCellEditor;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -117,35 +116,17 @@ public class InformationElementsPage extends WizardPage {
         termCombo.setEditable(true);
         termCombo.setPrototypeDisplayValue("dwc:coordinateUncertaintyInMeters");
         termCombo.setToolTipText("Pick from Darwin Core, Audiovisual Core, or custom vocabularies");
-        JButton addButton = new JButton("Add");
-        JButton addTypedButton = new JButton("Add selected term");
+        JButton addButton = new JButton("Add term");
         JButton removeButton = new JButton("Remove");
 
-        addButton.addActionListener(e -> addRow());
-        addTypedButton.addActionListener(e -> addSelectedTerm());
+        addButton.addActionListener(e -> addSelectedTerm());
         removeButton.addActionListener(e -> removeRow());
 
         buttons.add(new JLabel("Term:"));
         buttons.add(termCombo);
         buttons.add(addButton);
-        buttons.add(addTypedButton);
         buttons.add(removeButton);
         add(buttons, BorderLayout.SOUTH);
-    }
-
-    private void addRow() {
-        Object selected = termCombo.getEditor().getItem();
-        String qname = selected != null ? selected.toString() : "";
-        if (qname.trim().isEmpty()) {
-            qname = JOptionPane.showInputDialog(this,
-                    "Enter the qualified name of the term\n(e.g. dwc:scientificName):",
-                    "Add information element",
-                    JOptionPane.PLAIN_MESSAGE);
-        }
-        if (qname == null || qname.trim().isEmpty()) {
-            return;
-        }
-        tableModel.addRow(new InformationElementRef(qname.trim(), InfoElementRole.ACTED_UPON));
     }
 
     private void addSelectedTerm() {
@@ -154,7 +135,7 @@ public class InformationElementsPage extends WizardPage {
             return;
         }
         String qname = selected.toString().trim();
-        if (!qname.isEmpty()) {
+        if (!qname.isEmpty() && !tableModel.hasTerm(qname)) {
             tableModel.addRow(new InformationElementRef(qname, InfoElementRole.ACTED_UPON));
         }
     }
@@ -195,6 +176,15 @@ public class InformationElementsPage extends WizardPage {
         void addRow(InformationElementRef ref) {
             rows.add(ref);
             fireTableRowsInserted(rows.size() - 1, rows.size() - 1);
+        }
+
+        boolean hasTerm(String qname) {
+            for (InformationElementRef row : rows) {
+                if (row.getQname() != null && row.getQname().equalsIgnoreCase(qname)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         void removeRow(int index) {

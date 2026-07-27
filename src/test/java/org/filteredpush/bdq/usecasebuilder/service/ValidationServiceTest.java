@@ -138,6 +138,7 @@ public class ValidationServiceTest {
         TestDraft draft = new TestDraft();
         draft.setLabel("VALIDATION_SCINAME_NOTEMPTY");
         draft.setType(TestType.VALIDATION);
+        draft.setInformationElement("dwc:scientificName");
         assertTrue(service.validateNewTestPage(draft).isEmpty());
     }
 
@@ -146,6 +147,7 @@ public class ValidationServiceTest {
         TestDraft draft = new TestDraft();
         draft.setPrefLabel("My test label");
         draft.setType(TestType.MEASURE);
+        draft.setInformationElement("dwc:scientificName");
         assertTrue(service.validateNewTestPage(draft).isEmpty());
     }
 

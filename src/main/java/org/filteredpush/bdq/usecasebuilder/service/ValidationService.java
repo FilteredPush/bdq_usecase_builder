@@ -109,6 +109,9 @@ public class ValidationService {
         if (draft.getType() == null) {
             errors.add("Test type (Validation, Measure, Amendment, or Issue) is required.");
         }
+        if (isBlank(draft.getInformationElement())) {
+            errors.add("Information element is required for each new test draft.");
+        }
         return errors;
     }
 

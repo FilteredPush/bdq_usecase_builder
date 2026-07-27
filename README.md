@@ -37,9 +37,10 @@ The wizard will open a desktop window and guide you through:
 1. **Welcome / Project Setup** – default output is `output/` under the launch directory; review or change it.
 2. **Define Use Case** – provide a name, description, and fitness-for-use requirements.
 3. **Information Elements** – pick and categorise Darwin Core, Audiovisual Core, and custom vocabulary terms (ActedUpon or Consulted).
-4. **Select Existing Tests** – browse and search the bundled BDQ test catalog; tick the tests relevant to your use case.
-5. **Define New Tests** – author new BDQ test drafts with controlled-vocabulary picklists for dimensions, criteria/enhancements, bdqval defaults, and bdquc references.
-6. **Review & Export** – review a summary of everything and export the output files.
+4. **Select Existing Tests** – tests are filtered by selected information elements by default (with optional show-all); selecting tests can backfill additional information elements.
+5. **Define New Tests** – author information-element-driven test drafts, with criterion/enhancement vocab picklists and expected-response clause building.
+6. **Parameters & Defaults** – capture test input parameters/default values separately from expected response behavior.
+7. **Review & Export** – review a summary of everything and export the output files.
 
 Clicking **Finish** or **Export Now** on the last page writes two files to your chosen output directory:
 
@@ -76,7 +77,7 @@ The Swing wizard UI now includes the Phase 1 baseline plus Phase 2 enhancements.
 ### What is included
 
 - Swing wizard shell with card-based page navigation (Back / Next / Finish / Cancel).
-- All six wizard pages listed above.
+- All seven wizard pages listed above.
 - Output directory defaults to `<launch-directory>/output` and can be changed in the welcome page.
 - In-memory domain model: `ProjectState`, `UseCaseDraft`, `InformationElementRef`, `TestDraft`.
 - Enumerations: `TestType`, `InfoElementRole`, `ResourceType`.
@@ -86,12 +87,13 @@ The Swing wizard UI now includes the Phase 1 baseline plus Phase 2 enhancements.
 - `VocabularyService` + bundled local controlled vocabularies: `bdqdim`, `bdqcrit`, `bdqenh`, `bdqval`, `bdquc`, `dwc`, `ac`.
 - Information-element picker supports Darwin Core, Audiovisual Core, and user-configurable custom vocabularies.
 - Expanded contextual guidance text/tooltips on each wizard page (what, why, conventions).
+- Existing-test selection is information-element aware, with optional all-tests view and selected-test IE backfill into the information-elements step.
+- New-test authoring includes information-element coverage indicators and expected-response clause helpers.
 - Unit tests for model, validation, and export services.
 
 ### Still planned for later phases
 
 - Gap analysis matrix (requirement ↔ test coverage).
-- Structured expected-response clause builder (if/then/otherwise DSL).
 - Source authority / parameter editor.
 - Conformance test case (CSV) generator.
 - RDF/Turtle export.
@@ -139,6 +141,7 @@ src/main/java/org/filteredpush/bdq/usecasebuilder/
     ValidationService.java
     ExportService.java
     VocabularyService.java
+    InformationElementTermService.java
   catalog/
     TestCatalogEntry.java
     TestCatalogService.java
@@ -152,6 +155,7 @@ src/main/java/org/filteredpush/bdq/usecasebuilder/
       InformationElementsPage.java
       ExistingTestsPage.java
       NewTestPage.java
+      ParameterDefaultsPage.java
       ReviewExportPage.java
 src/main/resources/
   catalog/bdqtest_catalog.csv     Bundled BDQ test catalog

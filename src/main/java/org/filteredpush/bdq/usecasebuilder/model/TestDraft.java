@@ -15,6 +15,7 @@ public class TestDraft {
     private String prefLabel;
     private TestType type;
     private ResourceType resourceType;
+    private String informationElement;
     private String dimension;
     private String criterionOrEnhancement;
     private String useCaseReference;
@@ -71,6 +72,16 @@ public class TestDraft {
     /** Sets the resource type. */
     public void setResourceType(ResourceType resourceType) {
         this.resourceType = resourceType;
+    }
+
+    /** Returns the information element this test targets. */
+    public String getInformationElement() {
+        return informationElement;
+    }
+
+    /** Sets the information element this test targets. */
+    public void setInformationElement(String informationElement) {
+        this.informationElement = informationElement;
     }
 
     /**
