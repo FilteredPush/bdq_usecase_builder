@@ -76,6 +76,10 @@ public class ModelTest {
         assertNull(draft.getLabel());
         assertNull(draft.getType());
         assertNull(draft.getResourceType());
+        assertTrue(draft.getExpectedResponseClauses().isEmpty());
+        assertTrue(draft.getAuthorityDefaults().isEmpty());
+        assertTrue(draft.getParameterDefinitions().isEmpty());
+        assertTrue(draft.getConformanceRows().isEmpty());
     }
 
     @Test
@@ -131,6 +135,7 @@ public class ModelTest {
         assertTrue(state.getInformationElements().isEmpty());
         assertTrue(state.getSelectedExistingTestIris().isEmpty());
         assertTrue(state.getNewTestDrafts().isEmpty());
+        assertTrue(state.getRequirementCoverageRows().isEmpty());
     }
 
     @Test

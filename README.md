@@ -38,16 +38,20 @@ The wizard will open a desktop window and guide you through:
 2. **Define Use Case** – provide a name, description, and fitness-for-use requirements.
 3. **Information Elements** – pick and categorise Darwin Core, Audiovisual Core, and custom vocabulary terms (ActedUpon or Consulted).
 4. **Select Existing Tests** – tests are filtered by selected information elements by default (with optional show-all); selecting tests can backfill additional information elements.
-5. **Define New Tests** – author information-element-driven test drafts, with criterion/enhancement vocab picklists and expected-response clause building.
-6. **Parameters & Defaults** – capture test input parameters/default values separately from expected response behavior.
-7. **Review & Export** – review a summary of everything and export the output files.
+5. **Define New Tests** – author information-element-driven test drafts, with criterion/enhancement vocab picklists and structured expected-response clause building (ordered IF/THEN + final ELSE).
+6. **Authorities & Parameters** – define `hasAuthoritiesDefaults` and parameter defaults with structured editors and validation.
+7. **Gap Analysis Matrix** – link requirements/information elements to existing and new tests, track coverage status (`Covered`, `Partially Covered`, `Gap`), and record rationale.
+8. **Conformance CSV Data** – generate and edit conformance starter rows from expected-response clauses.
+9. **Review & Export** – review a summary of everything and export the output files.
 
-Clicking **Finish** or **Export Now** on the last page writes two files to your chosen output directory:
+Clicking **Finish** or **Export Now** on the last page writes:
 
 | File | Contents |
 |---|---|
-| `usecase_summary.md` | Human-readable Markdown summary of the use case package |
+| `usecase_summary.md` | Human-readable Markdown summary of the use case package (including gap matrix) |
 | `project_state.json` | Machine-readable JSON snapshot of the full project state |
+| `conformance_*.csv` | One conformance CSV per drafted new test |
+| `conformance_all_tests.csv` | Combined conformance CSV across drafted new tests |
 
 ### Launch the console wizard
 
@@ -77,7 +81,7 @@ The Swing wizard UI now includes the Phase 1 baseline plus Phase 2 enhancements.
 ### What is included
 
 - Swing wizard shell with card-based page navigation (Back / Next / Finish / Cancel).
-- All seven wizard pages listed above.
+- All nine wizard pages listed above.
 - Output directory defaults to `<launch-directory>/output` and can be changed in the welcome page.
 - In-memory domain model: `ProjectState`, `UseCaseDraft`, `InformationElementRef`, `TestDraft`.
 - Enumerations: `TestType`, `InfoElementRole`, `ResourceType`.
@@ -88,14 +92,14 @@ The Swing wizard UI now includes the Phase 1 baseline plus Phase 2 enhancements.
 - Information-element picker supports Darwin Core, Audiovisual Core, and user-configurable custom vocabularies.
 - Expanded contextual guidance text/tooltips on each wizard page (what, why, conventions).
 - Existing-test selection is information-element aware, with optional all-tests view and selected-test IE backfill into the information-elements step.
-- New-test authoring includes information-element coverage indicators and expected-response clause helpers.
+- New-test authoring includes information-element coverage indicators and structured expected-response clause helpers (ordered, editable clauses).
+- Dedicated gap-analysis matrix page with requirement-to-test mapping and coverage counts.
+- Dedicated authority/parameter editor with validation for URI-only, URI+API, and regex conventions.
+- Dedicated conformance CSV editor with generated starter rows plus editable edge-case rows.
 - Unit tests for model, validation, and export services.
 
 ### Still planned for later phases
 
-- Gap analysis matrix (requirement ↔ test coverage).
-- Source authority / parameter editor.
-- Conformance test case (CSV) generator.
 - RDF/Turtle export.
 - Richer ontology validation.
 - Refresh of the test catalog from a remote source.
@@ -134,12 +138,21 @@ src/main/java/org/filteredpush/bdq/usecasebuilder/
     UseCaseDraft.java
     InformationElementRef.java
     TestDraft.java
+    ExpectedResponseClause.java
+    AuthorityDefault.java
+    AuthorityPatternType.java
+    ParameterDefinition.java
+    RequirementCoverage.java
+    ConformanceRow.java
     TestType.java
     InfoElementRole.java
     ResourceType.java
   service/
     ValidationService.java
     ExportService.java
+    GapAnalysisService.java
+    ExpectedResponseClauseService.java
+    ConformanceCsvService.java
     VocabularyService.java
     InformationElementTermService.java
   catalog/
@@ -156,6 +169,8 @@ src/main/java/org/filteredpush/bdq/usecasebuilder/
       ExistingTestsPage.java
       NewTestPage.java
       ParameterDefaultsPage.java
+      GapAnalysisPage.java
+      ConformanceDataPage.java
       ReviewExportPage.java
 src/main/resources/
   catalog/bdqtest_catalog.csv     Bundled BDQ test catalog

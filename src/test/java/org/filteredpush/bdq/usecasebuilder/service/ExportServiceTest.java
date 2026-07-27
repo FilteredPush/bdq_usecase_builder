@@ -3,6 +3,11 @@ package org.filteredpush.bdq.usecasebuilder.service;
 import org.filteredpush.bdq.usecasebuilder.model.InfoElementRole;
 import org.filteredpush.bdq.usecasebuilder.model.InformationElementRef;
 import org.filteredpush.bdq.usecasebuilder.model.ProjectState;
+import org.filteredpush.bdq.usecasebuilder.model.RequirementCoverage;
+import org.filteredpush.bdq.usecasebuilder.model.ExpectedResponseClause;
+import org.filteredpush.bdq.usecasebuilder.model.AuthorityDefault;
+import org.filteredpush.bdq.usecasebuilder.model.AuthorityPatternType;
+import org.filteredpush.bdq.usecasebuilder.model.ParameterDefinition;
 import org.filteredpush.bdq.usecasebuilder.model.TestDraft;
 import org.filteredpush.bdq.usecasebuilder.model.TestType;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,13 +43,17 @@ public class ExportServiceTest {
 
         File mdFile = new File(tempDir.toFile(), "usecase_summary.md");
         File jsonFile = new File(tempDir.toFile(), "project_state.json");
+        File combinedCsv = new File(tempDir.toFile(), "conformance_all_tests.csv");
 
         assertTrue(mdFile.exists(), "Markdown file should be created");
         assertTrue(jsonFile.exists(), "JSON file should be created");
+        assertTrue(combinedCsv.exists(), "Combined conformance CSV should be created");
         assertTrue(result.contains("usecase_summary.md"),
                 "Export result should mention the markdown file");
         assertTrue(result.contains("project_state.json"),
                 "Export result should mention the JSON file");
+        assertTrue(result.contains("conformance_all_tests.csv"),
+                "Export result should mention the conformance csv");
     }
 
     // -----------------------------------------------------------------------
@@ -86,6 +95,8 @@ public class ExportServiceTest {
                 "Markdown should include new test label");
         assertTrue(content.contains("UseCase"),
                 "Markdown should include use-case reference");
+        assertTrue(content.contains("Gap Analysis Matrix"),
+                "Markdown should include gap analysis section");
     }
 
     // -----------------------------------------------------------------------
@@ -125,6 +136,8 @@ public class ExportServiceTest {
                 "JSON should include new test label");
         assertTrue(content.contains("parameterDefaults"),
                 "JSON should include parameter/defaults field");
+        assertTrue(content.contains("requirementCoverageMatrix"),
+                "JSON should include matrix data");
     }
 
     @Test
@@ -159,7 +172,29 @@ public class ExportServiceTest {
         draft.setUseCaseReference("UseCase");
         draft.setParameterDefaults("COMPLIANT");
         draft.setExpectedResponse("COMPLIANT if dwc:scientificName is not empty; otherwise NOT_COMPLIANT");
+        ExpectedResponseClause clause = new ExpectedResponseClause();
+        clause.setCondition("dwc:scientificName present");
+        clause.setStatus("RUN_HAS_RESULT");
+        clause.setResult("COMPLIANT");
+        draft.setExpectedResponseClauses(java.util.List.of(clause));
+        AuthorityDefault authority = new AuthorityDefault();
+        authority.setIdentifier("src");
+        authority.setPatternType(AuthorityPatternType.URI_ONLY);
+        authority.setAuthorityUri("https://example.org/source");
+        draft.setAuthorityDefaults(java.util.List.of(authority));
+        ParameterDefinition parameter = new ParameterDefinition();
+        parameter.setName("bdqval:sourceAuthority");
+        parameter.setDatatype("IRI");
+        parameter.setDefaultAuthorityIdentifier("src");
+        draft.setParameterDefinitions(java.util.List.of(parameter));
         state.addNewTestDraft(draft);
+
+        RequirementCoverage row = new RequirementCoverage();
+        row.setRequirementId("REQ-1");
+        row.setRequirementSummary("Records include dwc:scientificName");
+        row.setInformationElements("dwc:scientificName");
+        row.getLinkedNewTests().add("VALIDATION_SCINAME_NOTEMPTY");
+        state.setRequirementCoverageRows(java.util.List.of(row));
 
         return state;
     }

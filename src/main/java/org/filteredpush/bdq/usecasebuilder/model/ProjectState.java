@@ -21,6 +21,7 @@ public class ProjectState {
     private final List<InformationElementRef> informationElements = new ArrayList<>();
     private final List<String> selectedExistingTestIris = new ArrayList<>();
     private final List<TestDraft> newTestDrafts = new ArrayList<>();
+    private final List<RequirementCoverage> requirementCoverageRows = new ArrayList<>();
 
     /** Creates an empty project state. */
     public ProjectState() {
@@ -179,5 +180,22 @@ public class ProjectState {
     /** Clears all new test drafts. */
     public void clearNewTestDrafts() {
         newTestDrafts.clear();
+    }
+
+    // -----------------------------------------------------------------------
+    // Gap analysis matrix rows
+    // -----------------------------------------------------------------------
+
+    /** Returns an unmodifiable view of requirement coverage rows. */
+    public List<RequirementCoverage> getRequirementCoverageRows() {
+        return Collections.unmodifiableList(requirementCoverageRows);
+    }
+
+    /** Replaces requirement coverage rows. */
+    public void setRequirementCoverageRows(List<RequirementCoverage> rows) {
+        requirementCoverageRows.clear();
+        if (rows != null) {
+            requirementCoverageRows.addAll(rows);
+        }
     }
 }

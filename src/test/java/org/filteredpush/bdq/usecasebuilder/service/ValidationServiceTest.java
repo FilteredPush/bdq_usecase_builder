@@ -5,6 +5,9 @@ import org.filteredpush.bdq.usecasebuilder.model.InformationElementRef;
 import org.filteredpush.bdq.usecasebuilder.model.ProjectState;
 import org.filteredpush.bdq.usecasebuilder.model.TestDraft;
 import org.filteredpush.bdq.usecasebuilder.model.TestType;
+import org.filteredpush.bdq.usecasebuilder.model.AuthorityDefault;
+import org.filteredpush.bdq.usecasebuilder.model.AuthorityPatternType;
+import org.filteredpush.bdq.usecasebuilder.model.ParameterDefinition;
 import org.filteredpush.bdq.usecasebuilder.model.UseCaseDraft;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -209,5 +212,44 @@ public class ValidationServiceTest {
         state.addInformationElement(
                 new InformationElementRef("dwc:scientificName", InfoElementRole.ACTED_UPON));
         return state;
+    }
+
+    @Test
+    public void testValidateAuthorityAndParametersAllThreeConventions() {
+        TestDraft draft = new TestDraft();
+        AuthorityDefault uriOnly = new AuthorityDefault();
+        uriOnly.setIdentifier("auth1");
+        uriOnly.setPatternType(AuthorityPatternType.URI_ONLY);
+        uriOnly.setAuthorityUri("https://example.org/authority");
+        AuthorityDefault uriApi = new AuthorityDefault();
+        uriApi.setIdentifier("auth2");
+        uriApi.setPatternType(AuthorityPatternType.URI_API);
+        uriApi.setAuthorityUri("https://example.org/authority");
+        uriApi.setApiLabel("Catalog API");
+        uriApi.setApiEndpoint("https://example.org/api");
+        AuthorityDefault regex = new AuthorityDefault();
+        regex.setIdentifier("auth3");
+        regex.setPatternType(AuthorityPatternType.REGEX_BASED);
+        regex.setRegexPattern("^([A-Z]{2})$");
+        draft.setAuthorityDefaults(List.of(uriOnly, uriApi, regex));
+
+        ParameterDefinition parameter = new ParameterDefinition();
+        parameter.setName("bdqval:sourceAuthority");
+        draft.setParameterDefinitions(List.of(parameter));
+
+        assertTrue(service.validateAuthorityAndParameters(draft).isEmpty());
+    }
+
+    @Test
+    public void testValidateAuthorityAndParametersRejectsDuplicateParameterNames() {
+        TestDraft draft = new TestDraft();
+        ParameterDefinition p1 = new ParameterDefinition();
+        p1.setName("bdqval:sourceAuthority");
+        ParameterDefinition p2 = new ParameterDefinition();
+        p2.setName("bdqval:sourceAuthority");
+        draft.setParameterDefinitions(List.of(p1, p2));
+
+        List<String> errors = service.validateAuthorityAndParameters(draft);
+        assertTrue(errors.stream().anyMatch(e -> e.contains("Duplicate parameter name")));
     }
 }

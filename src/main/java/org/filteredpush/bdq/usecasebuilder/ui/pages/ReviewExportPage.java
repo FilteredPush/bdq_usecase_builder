@@ -2,6 +2,7 @@ package org.filteredpush.bdq.usecasebuilder.ui.pages;
 
 import org.filteredpush.bdq.usecasebuilder.model.InformationElementRef;
 import org.filteredpush.bdq.usecasebuilder.model.ProjectState;
+import org.filteredpush.bdq.usecasebuilder.model.RequirementCoverage;
 import org.filteredpush.bdq.usecasebuilder.model.TestDraft;
 import org.filteredpush.bdq.usecasebuilder.service.ExportService;
 import org.filteredpush.bdq.usecasebuilder.service.ValidationService;
@@ -161,6 +162,17 @@ public class ReviewExportPage extends WizardPage {
             sb.append("       Dimension: ").append(nvl(td.getDimension())).append('\n');
             sb.append("       Criterion: ").append(nvl(td.getCriterionOrEnhancement())).append('\n');
             sb.append("       Use case : ").append(nvl(td.getUseCaseReference())).append('\n');
+            sb.append("       Params   : ").append(td.getParameterDefinitions().size()).append('\n');
+            sb.append("       Authorities: ").append(td.getAuthorityDefaults().size()).append('\n');
+            sb.append("       CSV rows : ").append(td.getConformanceRows().size()).append('\n');
+        }
+
+        sb.append("\n=== Gap Analysis Matrix (")
+                .append(state.getRequirementCoverageRows().size()).append(") ===\n");
+        for (RequirementCoverage row : state.getRequirementCoverageRows()) {
+            sb.append("  ").append(row.getRequirementId()).append(" ")
+                    .append(nvl(row.getRequirementSummary())).append(" -> ")
+                    .append(row.computeStatus().getDisplayName()).append('\n');
         }
 
         // Output

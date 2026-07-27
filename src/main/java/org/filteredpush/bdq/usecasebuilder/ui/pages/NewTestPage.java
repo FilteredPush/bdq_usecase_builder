@@ -5,8 +5,10 @@ import org.filteredpush.bdq.usecasebuilder.catalog.TestCatalogService;
 import org.filteredpush.bdq.usecasebuilder.model.InformationElementRef;
 import org.filteredpush.bdq.usecasebuilder.model.ProjectState;
 import org.filteredpush.bdq.usecasebuilder.model.ResourceType;
+import org.filteredpush.bdq.usecasebuilder.model.ExpectedResponseClause;
 import org.filteredpush.bdq.usecasebuilder.model.TestDraft;
 import org.filteredpush.bdq.usecasebuilder.model.TestType;
+import org.filteredpush.bdq.usecasebuilder.service.ExpectedResponseClauseService;
 import org.filteredpush.bdq.usecasebuilder.service.InformationElementTermService;
 import org.filteredpush.bdq.usecasebuilder.service.ValidationService;
 import org.filteredpush.bdq.usecasebuilder.service.VocabularyService;
@@ -57,10 +59,12 @@ public class NewTestPage extends WizardPage {
     private JComboBox<String> dimensionCombo;
     private JComboBox<String> criterionCombo;
     private JComboBox<String> useCaseRefCombo;
+    private JComboBox<String> responseStatusCombo;
     private JComboBox<String> responseResultCombo;
     private JTextField responseConditionField;
-    private DefaultListModel<String> responseClauseListModel;
-    private JList<String> responseClauseList;
+    private JTextField responseCommentField;
+    private DefaultListModel<ExpectedResponseClause> responseClauseListModel;
+    private JList<ExpectedResponseClause> responseClauseList;
     private JTextArea expectedResponseArea;
     private JTextArea notesArea;
     private DefaultListModel<String> coverageListModel;
@@ -68,6 +72,7 @@ public class NewTestPage extends WizardPage {
 
     private boolean updatingForm = false;
     private final ValidationService validationService = new ValidationService();
+    private final ExpectedResponseClauseService clauseService = new ExpectedResponseClauseService();
     private final VocabularyService vocabularyService;
     private final TestCatalogService catalogService;
 
@@ -139,7 +144,7 @@ public class NewTestPage extends WizardPage {
                         + "Why: consistent descriptors make the test reusable across use cases.<br>"
                         + "Convention: use BDQ label pattern <tt>TESTTYPE_INFORMATIONELEMENT_EVALUATION</tt>, "
                         + "choose dimension/criterion from controlled vocabularies, and keep expected response "
-                        + "as clauses using response.result values.</html>");
+                        + "as ordered IF/THEN clauses plus a final ELSE using response.status/result values.</html>");
         guidance.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
         add(guidance, BorderLayout.NORTH);
 
@@ -210,8 +215,13 @@ public class NewTestPage extends WizardPage {
         responseResultCombo = new JComboBox<>();
         responseResultCombo.setEditable(false);
         responseResultCombo.setToolTipText("response.result value");
+        responseStatusCombo = new JComboBox<>();
+        responseStatusCombo.setEditable(false);
+        responseStatusCombo.setToolTipText("response.status value");
         responseConditionField = new JTextField(24);
         responseConditionField.setToolTipText("Condition for this expected response clause");
+        responseCommentField = new JTextField(24);
+        responseCommentField.setToolTipText("Comment template for this clause");
         responseClauseListModel = new DefaultListModel<>();
         responseClauseList = new JList<>(responseClauseListModel);
         expectedResponseArea = new JTextArea(5, 30);
@@ -233,44 +243,63 @@ public class NewTestPage extends WizardPage {
         addRow(form, "Use-case reference:", useCaseRefCombo, 7);
 
         GridBagConstraints lc = labelConstraints(8);
-        form.add(new JLabel("Add expected-response clause:"), lc);
+        form.add(new JLabel("IF condition:"), lc);
         JPanel clausePanel = new JPanel(new BorderLayout(4, 0));
         clausePanel.add(responseConditionField, BorderLayout.CENTER);
         JPanel clauseRight = new JPanel(new BorderLayout(4, 0));
-        clauseRight.add(responseResultCombo, BorderLayout.CENTER);
-        JButton addClauseButton = new JButton("Add clause");
-        addClauseButton.addActionListener(e -> addExpectedResponseClause());
-        clauseRight.add(addClauseButton, BorderLayout.EAST);
+        JPanel statusResultPanel = new JPanel(new BorderLayout(4, 0));
+        statusResultPanel.add(responseStatusCombo, BorderLayout.WEST);
+        statusResultPanel.add(responseResultCombo, BorderLayout.CENTER);
+        clauseRight.add(statusResultPanel, BorderLayout.CENTER);
+        JButton addIfButton = new JButton("Add IF");
+        addIfButton.addActionListener(e -> addExpectedResponseClause(false));
+        clauseRight.add(addIfButton, BorderLayout.EAST);
         clausePanel.add(clauseRight, BorderLayout.EAST);
         GridBagConstraints fc = fieldConstraints(8);
         form.add(clausePanel, fc);
 
         lc = labelConstraints(9);
-        form.add(new JLabel("Clauses:"), lc);
+        form.add(new JLabel("Comment template:"), lc);
         fc = fieldConstraints(9);
+        form.add(responseCommentField, fc);
+
+        lc = labelConstraints(10);
+        form.add(new JLabel("Clauses:"), lc);
+        fc = fieldConstraints(10);
         fc.fill = GridBagConstraints.BOTH;
         fc.weighty = 0.4;
         form.add(new JScrollPane(responseClauseList), fc);
 
-        JButton removeClauseButton = new JButton("Remove clause");
+        JPanel clauseButtons = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 4, 0));
+        JButton addElseButton = new JButton("Add ELSE");
+        addElseButton.addActionListener(e -> addExpectedResponseClause(true));
+        JButton removeClauseButton = new JButton("Remove");
         removeClauseButton.addActionListener(e -> removeSelectedClause());
+        JButton moveUpButton = new JButton("Move up");
+        moveUpButton.addActionListener(e -> moveSelectedClause(-1));
+        JButton moveDownButton = new JButton("Move down");
+        moveDownButton.addActionListener(e -> moveSelectedClause(1));
+        clauseButtons.add(addElseButton);
+        clauseButtons.add(removeClauseButton);
+        clauseButtons.add(moveUpButton);
+        clauseButtons.add(moveDownButton);
         GridBagConstraints rc = new GridBagConstraints();
-        rc.gridy = 10;
+        rc.gridy = 11;
         rc.gridx = 1;
         rc.anchor = GridBagConstraints.WEST;
         rc.insets = new Insets(2, 0, 0, 0);
-        form.add(removeClauseButton, rc);
+        form.add(clauseButtons, rc);
 
-        lc = labelConstraints(11);
-        form.add(new JLabel("Expected response:"), lc);
-        fc = fieldConstraints(11);
+        lc = labelConstraints(12);
+        form.add(new JLabel("Expected response preview:"), lc);
+        fc = fieldConstraints(12);
         fc.fill = GridBagConstraints.BOTH;
         fc.weighty = 0.6;
         form.add(new JScrollPane(expectedResponseArea), fc);
 
-        lc = labelConstraints(12);
+        lc = labelConstraints(13);
         form.add(new JLabel("Notes:"), lc);
-        fc = fieldConstraints(12);
+        fc = fieldConstraints(13);
         fc.fill = GridBagConstraints.BOTH;
         fc.weighty = 0.4;
         form.add(new JScrollPane(notesArea), fc);
@@ -278,7 +307,7 @@ public class NewTestPage extends WizardPage {
         JButton saveButton = new JButton("Save draft");
         saveButton.addActionListener(e -> saveCurrentDraft());
         GridBagConstraints bc = new GridBagConstraints();
-        bc.gridy = 13;
+        bc.gridy = 14;
         bc.gridx = 1;
         bc.anchor = GridBagConstraints.WEST;
         bc.insets = new Insets(8, 0, 0, 0);
@@ -349,9 +378,10 @@ public class NewTestPage extends WizardPage {
         refreshCriterionPicklistByType();
         criterionCombo.setSelectedItem(nvl(draft.getCriterionOrEnhancement()));
         useCaseRefCombo.setSelectedItem(nvl(draft.getUseCaseReference()));
-        loadExpectedResponseClauses(nvl(draft.getExpectedResponse()));
+        loadExpectedResponseClauses(draft);
         refreshResponseResultsByType();
-        expectedResponseArea.setText(buildExpectedResponseFromClauses());
+        expectedResponseArea.setText(clauseService.toCanonicalText(
+                toClauseList(responseClauseListModel)));
         notesArea.setText(nvl(draft.getNotes()));
         updatingForm = false;
     }
@@ -369,7 +399,8 @@ public class NewTestPage extends WizardPage {
         draft.setDimension(getSelectedComboText(dimensionCombo));
         draft.setCriterionOrEnhancement(getSelectedComboText(criterionCombo));
         draft.setUseCaseReference(getSelectedComboText(useCaseRefCombo));
-        expectedResponseArea.setText(buildExpectedResponseFromClauses());
+        expectedResponseArea.setText(clauseService.toCanonicalText(toClauseList(responseClauseListModel)));
+        draft.setExpectedResponseClauses(toClauseList(responseClauseListModel));
         draft.setExpectedResponse(expectedResponseArea.getText().trim());
         draft.setNotes(notesArea.getText().trim());
         // Refresh the list cell rendering
@@ -390,6 +421,7 @@ public class NewTestPage extends WizardPage {
         criterionCombo.setSelectedItem("");
         useCaseRefCombo.setSelectedItem("");
         responseConditionField.setText("");
+        responseCommentField.setText("");
         responseClauseListModel.clear();
         refreshResponseResultsByType();
         expectedResponseArea.setText("");
@@ -436,17 +468,24 @@ public class NewTestPage extends WizardPage {
             return;
         }
         List<String> responseValues = new ArrayList<>();
+        List<String> responseStatuses = new ArrayList<>();
+        responseStatuses.add("RUN_HAS_RESULT");
+        responseStatuses.add("INTERNAL_PREREQUISITES_NOT_MET");
+        responseStatuses.add("EXTERNAL_PREREQUISITES_NOT_MET");
         TestType selectedType = (TestType) typeCombo.getSelectedItem();
         if (selectedType == TestType.AMENDMENT) {
             responseValues.add("AMENDED");
+            responseValues.add("COMPLETE");
             responseValues.add("INTERNAL_PREREQUISITES_NOT_MET");
             responseValues.add("EXTERNAL_PREREQUISITES_NOT_MET");
         } else {
             responseValues.add("COMPLIANT");
             responseValues.add("NOT_COMPLIANT");
+            responseValues.add("COMPLETE");
             responseValues.add("INTERNAL_PREREQUISITES_NOT_MET");
             responseValues.add("EXTERNAL_PREREQUISITES_NOT_MET");
         }
+        resetComboItems(responseStatusCombo, responseStatuses);
         resetComboItems(responseResultCombo, responseValues);
     }
 
@@ -462,52 +501,70 @@ public class NewTestPage extends WizardPage {
         return value != null ? value.toString().trim() : "";
     }
 
-    private void addExpectedResponseClause() {
+    private void addExpectedResponseClause(boolean elseClause) {
         String condition = responseConditionField.getText().trim();
+        String status = getSelectedComboText(responseStatusCombo);
         String result = getSelectedComboText(responseResultCombo);
-        if (condition.isEmpty() || result.isEmpty()) {
+        String comment = responseCommentField.getText().trim();
+        if ((!elseClause && condition.isEmpty()) || status.isEmpty() || result.isEmpty()) {
             JOptionPane.showMessageDialog(this,
-                    "Provide both a condition and a response.result value.",
+                    "Provide required clause details.",
                     "Missing clause details",
                     JOptionPane.WARNING_MESSAGE);
             return;
         }
-        responseClauseListModel.addElement("If " + condition + ", response.result = " + result + ".");
+        ExpectedResponseClause clause = new ExpectedResponseClause();
+        clause.setElseClause(elseClause);
+        clause.setCondition(elseClause ? "" : condition);
+        clause.setStatus(status);
+        clause.setResult(result);
+        clause.setCommentTemplate(comment);
+        responseClauseListModel.addElement(clause);
         responseConditionField.setText("");
-        expectedResponseArea.setText(buildExpectedResponseFromClauses());
+        responseCommentField.setText("");
+        expectedResponseArea.setText(clauseService.toCanonicalText(toClauseList(responseClauseListModel)));
     }
 
     private void removeSelectedClause() {
         int selected = responseClauseList.getSelectedIndex();
         if (selected >= 0) {
             responseClauseListModel.remove(selected);
-            expectedResponseArea.setText(buildExpectedResponseFromClauses());
+            expectedResponseArea.setText(clauseService.toCanonicalText(toClauseList(responseClauseListModel)));
         }
     }
 
-    private void loadExpectedResponseClauses(String expectedResponse) {
+    private void moveSelectedClause(int delta) {
+        int selected = responseClauseList.getSelectedIndex();
+        int target = selected + delta;
+        if (selected < 0 || target < 0 || target >= responseClauseListModel.size()) {
+            return;
+        }
+        ExpectedResponseClause tmp = responseClauseListModel.get(selected);
+        responseClauseListModel.set(selected, responseClauseListModel.get(target));
+        responseClauseListModel.set(target, tmp);
+        responseClauseList.setSelectedIndex(target);
+        expectedResponseArea.setText(clauseService.toCanonicalText(toClauseList(responseClauseListModel)));
+    }
+
+    private void loadExpectedResponseClauses(TestDraft draft) {
         responseClauseListModel.clear();
-        String[] lines = expectedResponse.split("\\R");
-        for (String line : lines) {
-            String trimmed = line.trim();
-            if (!trimmed.isEmpty()) {
-                responseClauseListModel.addElement(trimmed);
-            }
+        List<ExpectedResponseClause> clauses = draft.getExpectedResponseClauses().isEmpty()
+                ? clauseService.parseCanonicalText(nvl(draft.getExpectedResponse()))
+                : draft.getExpectedResponseClauses();
+        for (ExpectedResponseClause clause : clauses) {
+            responseClauseListModel.addElement(clause);
         }
     }
 
-    private String buildExpectedResponseFromClauses() {
-        if (responseClauseListModel.isEmpty()) {
-            return "";
-        }
-        StringBuilder text = new StringBuilder();
-        for (int i = 0; i < responseClauseListModel.size(); i++) {
-            if (i > 0) {
-                text.append('\n');
+    private List<ExpectedResponseClause> toClauseList(DefaultListModel<ExpectedResponseClause> model) {
+        List<ExpectedResponseClause> clauses = new ArrayList<>();
+        for (int i = 0; i < model.size(); i++) {
+            ExpectedResponseClause clause = model.get(i);
+            if (clause != null) {
+                clauses.add(clause);
             }
-            text.append(responseClauseListModel.get(i));
         }
-        return text.toString();
+        return clauses;
     }
 
     private void refreshCoverageList() {
