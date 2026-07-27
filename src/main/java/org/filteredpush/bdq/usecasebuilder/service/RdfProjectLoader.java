@@ -57,7 +57,7 @@ public class RdfProjectLoader {
             Resource res = it.next();
             UseCaseDraft draft = new UseCaseDraft();
             draft.setName(extractLabel(model, res));
-            draft.setDescription(extractComment(model, res));
+            draft.setDescription(extractRdfsComment(model, res));
             draft.setFitnessRequirementsText(extractFitnessRequirementsText(model, res));
             draft.setScopeNote(extractScopeNote(model, res));
             if (draft.getName() == null || draft.getName().trim().isEmpty()) {
@@ -73,7 +73,7 @@ public class RdfProjectLoader {
             Resource res = it2.next();
             UseCaseDraft draft = new UseCaseDraft();
             draft.setName(extractLabel(model, res));
-            draft.setDescription(extractComment(model, res));
+            draft.setDescription(extractRdfsComment(model, res));
             draft.setFitnessRequirementsText(extractFitnessRequirementsText(model, res));
             draft.setScopeNote(extractScopeNote(model, res));
             if (draft.getName() == null || draft.getName().trim().isEmpty()) {
@@ -244,7 +244,7 @@ public class RdfProjectLoader {
     /**
      * Extracts rdfs:comment as the general description (separate from fitness requirements).
      */
-    private String extractComment(Model model, Resource res) {
+    private String extractRdfsComment(Model model, Resource res) {
         Statement stmt = res.getProperty(RDFS.comment);
         if (stmt != null && stmt.getObject().isLiteral()) {
             return stmt.getLiteral().getString();

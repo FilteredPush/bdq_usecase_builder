@@ -356,6 +356,7 @@ public class UseCasePage extends WizardPage {
         if (text == null) {
             return "";
         }
+        // &amp; must be unescaped last to avoid double-decoding (e.g. &amp;lt; → &lt; → <)
         return text.replace("&quot;", "\"")
                    .replace("&gt;", ">")
                    .replace("&lt;", "<")
