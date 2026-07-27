@@ -265,12 +265,32 @@ public class UseCasePage extends WizardPage {
             }
             bullets = sb.toString();
         } else {
-            lead = unescapeHtml(html.replaceAll("<[^>]+>", "").trim());
+            lead = unescapeHtml(stripHtmlTags(html).trim());
         }
         fitnessLeadArea.setText(lead);
         fitnessPropertiesArea.setText(bullets);
         String leadTrimmed = lead.trim();
         fitnessLeadUserEdited = !leadTrimmed.isEmpty() && !isDefaultFitnessLeadTemplate(leadTrimmed);
+    }
+
+    /**
+     * Strips HTML tags from a string using a character-level state machine to
+     * avoid the limitations of regex-based tag stripping with malformed input.
+     */
+    private static String stripHtmlTags(String html) {
+        StringBuilder out = new StringBuilder(html.length());
+        boolean inTag = false;
+        for (int i = 0; i < html.length(); i++) {
+            char ch = html.charAt(i);
+            if (ch == '<') {
+                inTag = true;
+            } else if (ch == '>') {
+                inTag = false;
+            } else if (!inTag) {
+                out.append(ch);
+            }
+        }
+        return out.toString();
     }
 
     private void loadFitnessClausesFromPlainText(String text) {
@@ -305,7 +325,7 @@ public class UseCasePage extends WizardPage {
 
     /**
      * Builds the fitness-for-use requirements text in HTML format:
-     * {@code <p>lead</p><ul><li>item1</li><li>item2</li></ul>}.
+     * {@code <p>lead</p>\n<ul>\n<li>item1</li>\n...\ n</ul>}.
      * If there are no bullet points, only the lead paragraph is returned.
      * Returns an empty string if both fields are empty.
      */
@@ -326,6 +346,17 @@ public class UseCasePage extends WizardPage {
             return "";
         }
 
+        return buildFitnessHtml(lead, items);
+    }
+
+    /**
+     * Formats fitness requirements as an HTML fragment.
+     *
+     * @param lead  the introductory sentence (may be empty)
+     * @param items bullet-point items (may be empty)
+     * @return HTML-formatted string
+     */
+    private static String buildFitnessHtml(String lead, List<String> items) {
         StringBuilder text = new StringBuilder();
         if (!lead.isEmpty()) {
             text.append("<p>").append(escapeHtml(lead)).append("</p>");
@@ -348,7 +379,8 @@ public class UseCasePage extends WizardPage {
         return text.replace("&", "&amp;")
                    .replace("<", "&lt;")
                    .replace(">", "&gt;")
-                   .replace("\"", "&quot;");
+                   .replace("\"", "&quot;")
+                   .replace("'", "&#39;");
     }
 
     /** Reverses HTML escaping for the entities produced by {@link #escapeHtml}. */
@@ -357,7 +389,8 @@ public class UseCasePage extends WizardPage {
             return "";
         }
         // &amp; must be unescaped last to avoid double-decoding (e.g. &amp;lt; → &lt; → <)
-        return text.replace("&quot;", "\"")
+        return text.replace("&#39;", "'")
+                   .replace("&quot;", "\"")
                    .replace("&gt;", ">")
                    .replace("&lt;", "<")
                    .replace("&amp;", "&");
