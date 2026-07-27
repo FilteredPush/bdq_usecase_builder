@@ -9,6 +9,7 @@ import org.filteredpush.bdq.usecasebuilder.service.InformationElementTermService
 import org.filteredpush.bdq.usecasebuilder.ui.WizardPage;
 
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -41,6 +42,7 @@ public class ExistingTestsPage extends WizardPage {
     private final TestCatalogService catalogService;
     private ExistingTestsTableModel tableModel;
     private TableRowSorter<ExistingTestsTableModel> sorter;
+    private JTable table;
     private JTextField searchField;
     private JCheckBox showAllCheck;
     private JLabel countLabel;
@@ -117,7 +119,7 @@ public class ExistingTestsPage extends WizardPage {
             entryTermsByIri.put(entry.getIri(), InformationElementTermService.extractQualifiedTerms(
                     entry.getLabel(), entry.getPrefLabel()));
         }
-        JTable table = new JTable(tableModel);
+        table = new JTable(tableModel);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setRowHeight(22);
 
@@ -152,6 +154,16 @@ public class ExistingTestsPage extends WizardPage {
         showAllCheck.addActionListener(e -> applyFilter());
         searchPanel.add(showAllCheck);
 
+        JButton selectAllShownBtn = new JButton("Select All Shown");
+        selectAllShownBtn.setToolTipText("Check all tests currently visible in the table");
+        selectAllShownBtn.addActionListener(e -> setAllShown(true));
+        searchPanel.add(selectAllShownBtn);
+
+        JButton deselectAllShownBtn = new JButton("Deselect All Shown");
+        deselectAllShownBtn.setToolTipText("Uncheck all tests currently visible in the table");
+        deselectAllShownBtn.addActionListener(e -> setAllShown(false));
+        searchPanel.add(deselectAllShownBtn);
+
         countLabel = new JLabel();
         updateCountLabel();
         searchPanel.add(countLabel);
@@ -184,6 +196,21 @@ public class ExistingTestsPage extends WizardPage {
                         || contains(catalogEntry.getPrefLabel(), lower);
             }
         });
+        updateCountLabel();
+    }
+
+    /**
+     * Checks or unchecks all tests currently visible in the table (after filtering).
+     *
+     * @param checked {@code true} to select all shown tests, {@code false} to deselect them
+     */
+    private void setAllShown(boolean checked) {
+        int viewCount = sorter.getViewRowCount();
+        int[] modelRows = new int[viewCount];
+        for (int viewRow = 0; viewRow < viewCount; viewRow++) {
+            modelRows[viewRow] = sorter.convertRowIndexToModel(viewRow);
+        }
+        tableModel.setSelectedForRows(modelRows, checked);
         updateCountLabel();
     }
 
@@ -239,6 +266,19 @@ public class ExistingTestsPage extends WizardPage {
         void setSelected(Set<String> iris) {
             for (int i = 0; i < entries.size(); i++) {
                 selected[i] = iris.contains(entries.get(i).getIri());
+            }
+            fireTableDataChanged();
+        }
+
+        /**
+         * Sets the selection state for a set of model row indices in one batch,
+         * firing a single {@code fireTableDataChanged()} afterwards.
+         */
+        void setSelectedForRows(int[] modelRows, boolean checked) {
+            for (int row : modelRows) {
+                if (row >= 0 && row < selected.length) {
+                    selected[row] = checked;
+                }
             }
             fireTableDataChanged();
         }

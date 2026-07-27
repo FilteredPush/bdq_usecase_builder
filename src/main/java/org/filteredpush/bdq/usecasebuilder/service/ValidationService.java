@@ -97,7 +97,9 @@ public class ValidationService {
     /**
      * Validates the New Test page for a single test draft.
      *
-     * <p>Required: label (or preferred label) and test type.</p>
+     * <p>Required: label (or preferred label) and test type. If the draft has
+     * multi-valued actedUpon/consulted lists, those are used; otherwise the
+     * legacy {@code informationElement} field is checked.</p>
      *
      * @param draft the test draft to validate
      * @return list of validation messages; empty if valid
@@ -114,7 +116,11 @@ public class ValidationService {
         if (draft.getType() == null) {
             errors.add("Test type (Validation, Measure, Amendment, or Issue) is required.");
         }
-        if (isBlank(draft.getInformationElement())) {
+        // Accept multi-valued IEs or legacy single field
+        boolean hasIe = !draft.getActedUponElements().isEmpty()
+                || !draft.getConsultedElements().isEmpty()
+                || !isBlank(draft.getInformationElement());
+        if (!hasIe) {
             errors.add("Information element is required for each new test draft.");
         }
         return errors;

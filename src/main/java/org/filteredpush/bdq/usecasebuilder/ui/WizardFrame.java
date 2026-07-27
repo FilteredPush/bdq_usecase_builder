@@ -18,6 +18,7 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -25,30 +26,41 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GridLayout;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.prefs.Preferences;
 
 /**
  * Main window for the BDQ Use Case Builder Swing wizard.
  *
- * <p>The frame is divided into three vertical sections:</p>
- * <ol>
+ * <p>Phase 3 layout:</p>
+ * <ul>
  *   <li><strong>Header</strong> – shows the current page title.</li>
- *   <li><strong>Content area</strong> – uses a {@link CardLayout} to display
- *       the current wizard page.</li>
- *   <li><strong>Navigation bar</strong> – Back / Next / Finish / Cancel
- *       buttons delegating to the {@link WizardController}.</li>
- * </ol>
+ *   <li><strong>Phase sidebar</strong> (left) – lists all phases with their
+ *       completion status indicator; clicking a phase name jumps to it.</li>
+ *   <li><strong>Content area</strong> (center) – uses a {@link CardLayout} to
+ *       display the current wizard page.</li>
+ *   <li><strong>Navigation bar</strong> (bottom) – Back / Next / Finish /
+ *       Cancel buttons delegating to the {@link WizardController}.</li>
+ * </ul>
  *
- * <p>Build and display the wizard with:</p>
- * <pre>
- *   SwingUtilities.invokeLater(() -> {
- *       WizardFrame frame = new WizardFrame();
- *       frame.setVisible(true);
- *   });
- * </pre>
+ * <p>Window size (default 1400×900) and position are persisted via
+ * {@link Preferences} so they are restored on next launch.</p>
  */
 public class WizardFrame extends JFrame {
+
+    // -----------------------------------------------------------------------
+    // Persistence key prefix
+    // -----------------------------------------------------------------------
+
+    private static final String PREFS_NODE = "org/filteredpush/bdq/usecasebuilder";
+    private static final String PREF_WIDTH  = "windowWidth";
+    private static final String PREF_HEIGHT = "windowHeight";
+    private static final String PREF_X      = "windowX";
+    private static final String PREF_Y      = "windowY";
 
     // -----------------------------------------------------------------------
     // UI components
@@ -57,17 +69,21 @@ public class WizardFrame extends JFrame {
     private final JLabel headerLabel;
     private final JPanel cardPanel;
     private final CardLayout cardLayout;
+    private JPanel sidebarPanel;
 
     private JButton backButton;
     private JButton nextButton;
     private JButton finishButton;
     private JButton cancelButton;
 
+    private List<JButton> sidebarButtons = new ArrayList<>();
+
     // -----------------------------------------------------------------------
     // State
     // -----------------------------------------------------------------------
 
     private WizardController controller;
+    private List<WizardPage> pages;
 
     // -----------------------------------------------------------------------
     // Constructor
@@ -80,10 +96,18 @@ public class WizardFrame extends JFrame {
      * called.</p>
      */
     public WizardFrame() {
-        super("BDQ Use Case Builder Wizard");
+        super("BDQ Use Case Builder – Guided Authoring Workbench");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setPreferredSize(new Dimension(1200, 860));
-        setMinimumSize(new Dimension(1100, 780));
+
+        // Restore persisted window size/position
+        Preferences prefs = Preferences.userRoot().node(PREFS_NODE);
+        int w = prefs.getInt(PREF_WIDTH,  1400);
+        int h = prefs.getInt(PREF_HEIGHT, 900);
+        int x = prefs.getInt(PREF_X, -1);
+        int y = prefs.getInt(PREF_Y, -1);
+
+        setPreferredSize(new Dimension(w, h));
+        setMinimumSize(new Dimension(1100, 750));
         setLayout(new BorderLayout());
 
         // Header
@@ -95,11 +119,25 @@ public class WizardFrame extends JFrame {
         headerLabel.setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
         add(headerLabel, BorderLayout.NORTH);
 
-        // Card panel
+        // Card panel (center)
         cardLayout = new CardLayout();
         cardPanel = new JPanel(cardLayout);
         cardPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
-        add(cardPanel, BorderLayout.CENTER);
+
+        // Sidebar placeholder – will be populated in wireController()
+        sidebarPanel = new JPanel(new GridLayout(0, 1, 0, 2));
+        sidebarPanel.setBackground(new Color(0x3D6B8A));
+        sidebarPanel.setBorder(BorderFactory.createEmptyBorder(8, 4, 8, 4));
+        JScrollPane sidebarScroll = new JScrollPane(sidebarPanel,
+                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        sidebarScroll.setPreferredSize(new Dimension(190, 0));
+        sidebarScroll.setBorder(BorderFactory.createEmptyBorder());
+
+        JPanel centerArea = new JPanel(new BorderLayout());
+        centerArea.add(sidebarScroll, BorderLayout.WEST);
+        centerArea.add(cardPanel, BorderLayout.CENTER);
+        add(centerArea, BorderLayout.CENTER);
 
         // Navigation bar
         add(buildNavBar(), BorderLayout.SOUTH);
@@ -108,7 +146,30 @@ public class WizardFrame extends JFrame {
         wireController();
 
         pack();
-        setLocationRelativeTo(null);
+
+        // Apply persisted position
+        if (x >= 0 && y >= 0) {
+            setLocation(x, y);
+        } else {
+            setLocationRelativeTo(null);
+        }
+
+        // Persist window size/position changes
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                Preferences p = Preferences.userRoot().node(PREFS_NODE);
+                p.putInt(PREF_WIDTH,  getWidth());
+                p.putInt(PREF_HEIGHT, getHeight());
+            }
+
+            @Override
+            public void componentMoved(ComponentEvent e) {
+                Preferences p = Preferences.userRoot().node(PREFS_NODE);
+                p.putInt(PREF_X, getX());
+                p.putInt(PREF_Y, getY());
+            }
+        });
     }
 
     // -----------------------------------------------------------------------
@@ -122,8 +183,8 @@ public class WizardFrame extends JFrame {
         VocabularyService vocabularyService = new VocabularyService();
         vocabularyService.load();
 
-        List<WizardPage> pages = new ArrayList<>();
-        pages.add(new WelcomePage(state));
+        pages = new ArrayList<>();
+        pages.add(new WelcomePage(state, catalogService));
         pages.add(new UseCasePage(state));
         pages.add(new InformationElementsPage(state, vocabularyService));
         pages.add(new ExistingTestsPage(state, catalogService));
@@ -139,10 +200,53 @@ public class WizardFrame extends JFrame {
 
         controller = new WizardController(this, state, pages);
 
+        // Build sidebar buttons
+        buildSidebar(pages);
+
         backButton.addActionListener(e -> controller.goBack());
         nextButton.addActionListener(e -> controller.goNext());
         finishButton.addActionListener(e -> controller.finish());
         cancelButton.addActionListener(e -> controller.cancel());
+    }
+
+    /**
+     * Builds the phase sidebar with one button per page.
+     */
+    private void buildSidebar(List<WizardPage> pageList) {
+        sidebarPanel.removeAll();
+        sidebarButtons.clear();
+
+        for (int i = 0; i < pageList.size(); i++) {
+            WizardPage page = pageList.get(i);
+            final int idx = i;
+
+            JButton btn = new JButton(buildSidebarText(i, page));
+            btn.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
+            btn.setForeground(Color.WHITE);
+            btn.setBackground(new Color(0x3D6B8A));
+            btn.setBorderPainted(false);
+            btn.setFocusPainted(false);
+            btn.setOpaque(true);
+            btn.setHorizontalAlignment(SwingConstants.LEFT);
+            btn.setToolTipText(page.getPageTitle());
+            btn.addActionListener(e -> controller.jumpToPage(idx));
+            sidebarButtons.add(btn);
+            sidebarPanel.add(btn);
+        }
+
+        sidebarPanel.revalidate();
+        sidebarPanel.repaint();
+    }
+
+    private String buildSidebarText(int index, WizardPage page) {
+        String status = page.getCompletionStatus().getDisplayName();
+        String title = page.getPageTitle();
+        // Shorten for sidebar display
+        if (title.length() > 22) {
+            title = title.substring(0, 21) + "…";
+        }
+        return "<html><b>" + (index + 1) + ".</b> " + title
+                + "<br><small><font color='#DDDDDD'>" + status + "</font></small></html>";
     }
 
     // -----------------------------------------------------------------------
@@ -171,8 +275,8 @@ public class WizardFrame extends JFrame {
     // -----------------------------------------------------------------------
 
     /**
-     * Switches the card panel to the page at the given index and updates the
-     * header label.
+     * Switches the card panel to the page at the given index, updates the
+     * header label, and refreshes the sidebar status indicators.
      *
      * @param index zero-based page index
      */
@@ -181,6 +285,26 @@ public class WizardFrame extends JFrame {
         WizardPage page = (WizardPage) cardPanel.getComponent(index);
         headerLabel.setText("Step " + (index + 1) + " of " + cardPanel.getComponentCount()
                 + "  –  " + page.getPageTitle());
+        refreshSidebar(index);
+    }
+
+    /**
+     * Refreshes sidebar button text/colors to reflect current status.
+     *
+     * @param currentIndex the currently displayed page index
+     */
+    public void refreshSidebar(int currentIndex) {
+        for (int i = 0; i < sidebarButtons.size() && i < pages.size(); i++) {
+            WizardPage page = pages.get(i);
+            JButton btn = sidebarButtons.get(i);
+            btn.setText(buildSidebarText(i, page));
+            boolean isCurrent = (i == currentIndex);
+            btn.setBackground(isCurrent ? new Color(0x1A3E5C) : new Color(0x3D6B8A));
+            WizardPage.CompletionStatus status = page.getCompletionStatus();
+            btn.setForeground(status.getColor());
+        }
+        sidebarPanel.revalidate();
+        sidebarPanel.repaint();
     }
 
     /**

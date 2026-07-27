@@ -84,6 +84,43 @@ public class TestCatalogService {
         return Collections.unmodifiableList(entries);
     }
 
+    /**
+     * Adds a single entry to the catalog (e.g. loaded from an external RDF document).
+     * Duplicate IRIs are silently ignored.
+     *
+     * @param entry the entry to add; {@code null} is ignored
+     */
+    public void addEntry(TestCatalogEntry entry) {
+        if (entry == null || entry.getIri() == null || entry.getIri().isEmpty()) {
+            return;
+        }
+        boolean duplicate = entries.stream().anyMatch(e -> entry.getIri().equals(e.getIri()));
+        if (!duplicate) {
+            entries.add(entry);
+        }
+    }
+
+    /**
+     * Adds multiple entries to the catalog, ignoring duplicates by IRI.
+     *
+     * @param newEntries list of entries to add; {@code null} is ignored
+     */
+    public void addEntries(List<TestCatalogEntry> newEntries) {
+        if (newEntries == null) {
+            return;
+        }
+        int added = 0;
+        for (TestCatalogEntry e : newEntries) {
+            int before = entries.size();
+            addEntry(e);
+            if (entries.size() > before) {
+                added++;
+            }
+        }
+        logger.info("Added {}/{} entries from external source (duplicates skipped); catalog now has {} entries",
+                added, newEntries.size(), entries.size());
+    }
+
     // -----------------------------------------------------------------------
     // CSV parsing
     // -----------------------------------------------------------------------

@@ -22,6 +22,10 @@ public class ProjectState {
     private final List<String> selectedExistingTestIris = new ArrayList<>();
     private final List<TestDraft> newTestDrafts = new ArrayList<>();
     private final List<RequirementCoverage> requirementCoverageRows = new ArrayList<>();
+    /** URI of an additional vocabulary to load IE terms from (optional). */
+    private String additionalVocabUri;
+    /** File path or URI of an additional RDF document to load tests and use cases from (optional). */
+    private String additionalRdfSource;
 
     /** Creates an empty project state. */
     public ProjectState() {
@@ -197,5 +201,38 @@ public class ProjectState {
         if (rows != null) {
             requirementCoverageRows.addAll(rows);
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // Additional vocabulary URI
+    // -----------------------------------------------------------------------
+
+    /**
+     * Returns the URI of an additional vocabulary to load IE terms from, or {@code null}.
+     */
+    public String getAdditionalVocabUri() {
+        return additionalVocabUri;
+    }
+
+    /** Sets the URI of an additional IE vocabulary to load. */
+    public void setAdditionalVocabUri(String additionalVocabUri) {
+        this.additionalVocabUri = additionalVocabUri;
+    }
+
+    // -----------------------------------------------------------------------
+    // Additional RDF source
+    // -----------------------------------------------------------------------
+
+    /**
+     * Returns the file path or URI of an additional RDF document to load tests and
+     * use cases from, or {@code null}.
+     */
+    public String getAdditionalRdfSource() {
+        return additionalRdfSource;
+    }
+
+    /** Sets the file path or URI of an additional RDF document. */
+    public void setAdditionalRdfSource(String additionalRdfSource) {
+        this.additionalRdfSource = additionalRdfSource;
     }
 }

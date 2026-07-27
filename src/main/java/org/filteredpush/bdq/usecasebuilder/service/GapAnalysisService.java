@@ -30,6 +30,15 @@ public class GapAnalysisService {
             if (line.isEmpty()) {
                 continue;
             }
+            // Skip pure HTML structural tags (from the <ul>/<li> storage format)
+            if (isHtmlStructuralTag(line)) {
+                continue;
+            }
+            // Strip <li>...</li> wrapper if present
+            line = stripListItemTags(line);
+            if (line.isEmpty()) {
+                continue;
+            }
             RequirementCoverage row = existingById.get("REQ-" + seq);
             if (row == null) {
                 row = new RequirementCoverage();
@@ -87,5 +96,40 @@ public class GapAnalysisService {
             }
         }
         return String.join(", ", matches);
+    }
+
+    /**
+     * Returns {@code true} if the given line (already trimmed) is a pure HTML
+     * structural tag that should not be displayed as a requirement row.
+     * Handles {@code <ul>}, {@code </ul>}, {@code <ol>}, {@code </ol>}.
+     */
+    private boolean isHtmlStructuralTag(String line) {
+        String lower = line.toLowerCase();
+        return lower.equals("<ul>") || lower.equals("</ul>")
+                || lower.equals("<ol>") || lower.equals("</ol>");
+    }
+
+    /**
+     * Strips an outer {@code <li>…</li>} wrapper from a line, if present,
+     * and HTML-unescapes common entities so the plain text is shown.
+     *
+     * @param line a trimmed line that may start with {@code <li>}
+     * @return the plain-text content, or the original line if no wrapper was found
+     */
+    private String stripListItemTags(String line) {
+        String lower = line.toLowerCase();
+        if (lower.startsWith("<li>")) {
+            line = line.substring(4);
+        }
+        if (line.toLowerCase().endsWith("</li>")) {
+            line = line.substring(0, line.length() - 5);
+        }
+        // Unescape basic HTML entities used by UseCasePage.escapeHtml()
+        line = line.replace("&#39;", "'")
+                   .replace("&quot;", "\"")
+                   .replace("&gt;", ">")
+                   .replace("&lt;", "<")
+                   .replace("&amp;", "&");
+        return line.trim();
     }
 }

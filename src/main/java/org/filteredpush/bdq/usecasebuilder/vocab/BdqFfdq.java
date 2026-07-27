@@ -138,4 +138,11 @@ public final class BdqFfdq {
      */
     public static final Property implementedBy =
             ResourceFactory.createProperty(NS + "implementedBy");
+
+    /**
+     * {@code bdqffdq:hasFitnessForUsePurpose} – describes the fitness-for-use
+     * purpose of a use case (the narrative requirements that motivated the use case).
+     */
+    public static final Property hasFitnessForUsePurpose =
+            ResourceFactory.createProperty(NS + "hasFitnessForUsePurpose");
 }
