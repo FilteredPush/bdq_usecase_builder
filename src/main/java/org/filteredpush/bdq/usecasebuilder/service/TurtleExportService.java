@@ -287,7 +287,7 @@ public class TurtleExportService {
         String specSeed = "spec:" + expectedResponse + ":" + normalizeSeed(td.getLabel());
         Resource specRes = model.createResource(stableUrnUuid(specSeed));
         addBdqType(specRes, BdqFfdq.Specification);
-        specRes.addProperty(RDFS.label, "Specification for: " + testDisplayLabel(td));
+        specRes.addProperty(RDFS.label, specificationLabel(td));
         addBdqLiteral(specRes, BdqFfdq.hasExpectedResponse, expectedResponse);
 
         String authoritiesDefaults = buildAuthoritiesDefaultsText(td);
@@ -304,7 +304,7 @@ public class TurtleExportService {
 
         Resource methodRes = model.createResource(stableUrnUuid("method:" + specSeed));
         addBdqType(methodRes, methodTypeResource(td.getType()));
-        String methodLabel = "Method for: " + testDisplayLabel(td);
+        String methodLabel = methodLabel(td);
         methodRes.addProperty(RDFS.label, methodLabel);
         methodRes.addProperty(SKOS.prefLabel, methodLabel);
         addBdqResource(methodRes, forNeedProperty(td.getType()), testRes);
@@ -358,6 +358,14 @@ public class TurtleExportService {
         return chunks.isEmpty() ? null : String.join(" ; ", chunks);
     }
 
+    /**
+     * Builds up to {@code maxExamples} SKOS examples from conformance rows.
+     *
+     * <p>Only rows with {@code Response.status=RUN_HAS_RESULT} are included.
+     * Each example is serialized as:
+     * {@code input1="value1", input2="value2": Response.status=..., Response.result=..., Response.comment="..."}.
+     * Rows without non-response input values are ignored.</p>
+     */
     private List<String> buildSpecificationExamples(TestDraft td, int maxExamples) {
         List<String> examples = new ArrayList<>();
         for (var row : td.getConformanceRows()) {
@@ -379,7 +387,11 @@ public class TurtleExportService {
                         || "Response.comment".equals(key)) {
                     return;
                 }
-                inputs.add(key + "=\"" + escapeQuotes(collapseWhitespace(value)) + "\"");
+                StringBuilder input = new StringBuilder();
+                input.append(key).append("=\"")
+                        .append(escapeQuotes(collapseWhitespace(value)))
+                        .append('"');
+                inputs.add(input.toString());
             });
             if (inputs.isEmpty()) {
                 continue;
@@ -640,6 +652,14 @@ public class TurtleExportService {
 
     private static String escapeQuotes(String s) {
         return s == null ? "" : s.replace("\"", "\\\"");
+    }
+
+    private String specificationLabel(TestDraft td) {
+        return "Specification for: " + testDisplayLabel(td);
+    }
+
+    private String methodLabel(TestDraft td) {
+        return "Method for: " + testDisplayLabel(td);
     }
 
     /**

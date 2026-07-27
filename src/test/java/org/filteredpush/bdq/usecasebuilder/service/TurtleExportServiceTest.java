@@ -267,7 +267,7 @@ class TurtleExportServiceTest {
         assertTrue(description.contains("DCMI Type Vocabulary List of Terms"));
 
         List<RDFNode> examples = model.listObjectsOfProperty(spec, SKOS.example).toList();
-        assertEquals(2, examples.size(), "Only non-prerequisite RUN_HAS_RESULT rows should become examples");
+        assertEquals(2, examples.size(), "Only rows with Response.status=RUN_HAS_RESULT should become examples");
         assertTrue(examples.get(0).asLiteral().getString().contains("Response.status=RUN_HAS_RESULT"));
         assertTrue(examples.get(1).asLiteral().getString().contains("Response.status=RUN_HAS_RESULT"));
         assertFalse(examples.stream().anyMatch(x -> x.asLiteral().getString().contains("PREREQUISITES_NOT_MET")));
