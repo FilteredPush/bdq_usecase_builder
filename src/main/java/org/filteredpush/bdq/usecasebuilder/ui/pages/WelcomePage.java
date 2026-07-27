@@ -134,6 +134,10 @@ public class WelcomePage extends WizardPage {
         JPanel form = new JPanel(new GridBagLayout());
         form.setBorder(BorderFactory.createTitledBorder("Project setup"));
 
+        // Wrap the form in a north-aligned container so controls stick to the top
+        JPanel formWrapper = new JPanel(new BorderLayout());
+        formWrapper.add(form, BorderLayout.NORTH);
+
         int row = 0;
 
         // Row: Output directory
@@ -189,7 +193,7 @@ public class WelcomePage extends WizardPage {
                 "Select an existing use case from the loaded RDF document or loaded project");
         addFieldRow(form, "Select existing use case:", existingUseCaseCombo, null, row++);
 
-        add(form, BorderLayout.CENTER);
+        add(formWrapper, BorderLayout.CENTER);
     }
 
     private void addFieldRow(JPanel form, String labelText,
@@ -227,8 +231,13 @@ public class WelcomePage extends WizardPage {
     private void browseForDirectory(JTextField targetField) {
         JFileChooser chooser = new JFileChooser();
         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        if (!targetField.getText().trim().isEmpty()) {
-            chooser.setCurrentDirectory(new File(targetField.getText().trim()));
+        // Start from the output directory if set, otherwise from the target field value
+        String startDir = outputDirField.getText().trim();
+        if (startDir.isEmpty()) {
+            startDir = targetField.getText().trim();
+        }
+        if (!startDir.isEmpty()) {
+            chooser.setCurrentDirectory(new File(startDir));
         }
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             targetField.setText(chooser.getSelectedFile().getAbsolutePath());
@@ -241,6 +250,11 @@ public class WelcomePage extends WizardPage {
         if (extensions.length > 0) {
             chooser.setFileFilter(new FileNameExtensionFilter(description, extensions));
         }
+        // Start from the output directory if set
+        String startDir = outputDirField.getText().trim();
+        if (!startDir.isEmpty()) {
+            chooser.setCurrentDirectory(new File(startDir));
+        }
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             targetField.setText(chooser.getSelectedFile().getAbsolutePath());
         }
@@ -251,6 +265,11 @@ public class WelcomePage extends WizardPage {
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         chooser.setFileFilter(new FileNameExtensionFilter(
                 "BDQ project files (*.properties)", "properties"));
+        // Start from the output directory if set
+        String startDir = outputDirField.getText().trim();
+        if (!startDir.isEmpty()) {
+            chooser.setCurrentDirectory(new File(startDir));
+        }
         if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
             return;
         }
@@ -293,6 +312,11 @@ public class WelcomePage extends WizardPage {
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         chooser.setFileFilter(new FileNameExtensionFilter(
                 "BDQ project files (*.properties)", "properties"));
+        // Start from the output directory if set
+        String startDir = outputDirField.getText().trim();
+        if (!startDir.isEmpty()) {
+            chooser.setCurrentDirectory(new File(startDir));
+        }
         chooser.setSelectedFile(new File("bdq_project.properties"));
         if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
             return;

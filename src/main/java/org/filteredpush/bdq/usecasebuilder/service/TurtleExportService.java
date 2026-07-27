@@ -164,9 +164,11 @@ public class TurtleExportService {
         }
         if (uc.getFitnessRequirementsText() != null
                 && !uc.getFitnessRequirementsText().isEmpty()) {
-            ucRes.addProperty(
-                    model.createProperty("http://purl.org/dc/terms/", "description"),
+            ucRes.addProperty(BdqFfdq.hasFitnessForUsePurpose,
                     uc.getFitnessRequirementsText());
+        }
+        if (uc.getScopeNote() != null && !uc.getScopeNote().isEmpty()) {
+            ucRes.addProperty(SKOS.scopeNote, uc.getScopeNote());
         }
 
         // --- Policy resource linking UC to tests ---

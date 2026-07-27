@@ -57,7 +57,9 @@ public class RdfProjectLoader {
             Resource res = it.next();
             UseCaseDraft draft = new UseCaseDraft();
             draft.setName(extractLabel(model, res));
-            draft.setDescription(extractDescription(model, res));
+            draft.setDescription(extractComment(model, res));
+            draft.setFitnessRequirementsText(extractFitnessRequirementsText(model, res));
+            draft.setScopeNote(extractScopeNote(model, res));
             if (draft.getName() == null || draft.getName().trim().isEmpty()) {
                 String localName = res.isURIResource() ? res.getLocalName() : res.toString();
                 draft.setName(localName);
@@ -71,7 +73,9 @@ public class RdfProjectLoader {
             Resource res = it2.next();
             UseCaseDraft draft = new UseCaseDraft();
             draft.setName(extractLabel(model, res));
-            draft.setDescription(extractDescription(model, res));
+            draft.setDescription(extractComment(model, res));
+            draft.setFitnessRequirementsText(extractFitnessRequirementsText(model, res));
+            draft.setScopeNote(extractScopeNote(model, res));
             if (draft.getName() == null || draft.getName().trim().isEmpty()) {
                 draft.setName(res.isURIResource() ? res.getLocalName() : res.toString());
             }
@@ -231,6 +235,49 @@ public class RdfProjectLoader {
         }
         // Try rdfs:comment
         stmt = res.getProperty(RDFS.comment);
+        if (stmt != null && stmt.getObject().isLiteral()) {
+            return stmt.getLiteral().getString();
+        }
+        return null;
+    }
+
+    /**
+     * Extracts rdfs:comment as the general description (separate from fitness requirements).
+     */
+    private String extractComment(Model model, Resource res) {
+        Statement stmt = res.getProperty(RDFS.comment);
+        if (stmt != null && stmt.getObject().isLiteral()) {
+            return stmt.getLiteral().getString();
+        }
+        return null;
+    }
+
+    /**
+     * Extracts the fitness-for-use requirements text from
+     * {@code bdqffdq:hasFitnessForUsePurpose} or, as a fallback, {@code dcterms:description}.
+     */
+    private String extractFitnessRequirementsText(Model model, Resource res) {
+        // Prefer bdqffdq:hasFitnessForUsePurpose
+        Property fitnessProp = model.createProperty(BDQFFDQ_NS + "hasFitnessForUsePurpose");
+        Statement stmt = res.getProperty(fitnessProp);
+        if (stmt != null && stmt.getObject().isLiteral()) {
+            return stmt.getLiteral().getString();
+        }
+        // Fallback: dcterms:description
+        Property descProp = model.createProperty(DCTERMS_NS + "description");
+        stmt = res.getProperty(descProp);
+        if (stmt != null && stmt.getObject().isLiteral()) {
+            return stmt.getLiteral().getString();
+        }
+        return null;
+    }
+
+    /**
+     * Extracts the optional {@code skos:scopeNote} from a use case resource.
+     */
+    private String extractScopeNote(Model model, Resource res) {
+        Property scopeNoteProp = model.createProperty(SKOS_NS + "scopeNote");
+        Statement stmt = res.getProperty(scopeNoteProp);
         if (stmt != null && stmt.getObject().isLiteral()) {
             return stmt.getLiteral().getString();
         }

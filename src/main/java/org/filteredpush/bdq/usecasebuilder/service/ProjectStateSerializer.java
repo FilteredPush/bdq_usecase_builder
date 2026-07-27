@@ -42,13 +42,15 @@ public class ProjectStateSerializer {
 
     private static final Logger logger = LoggerFactory.getLogger(ProjectStateSerializer.class);
 
-    private static final String KEY_OUTPUT_DIR     = "outputDirectory";
-    private static final String KEY_UC_NAME        = "usecase.name";
-    private static final String KEY_UC_DESCRIPTION = "usecase.description";
-    private static final String KEY_IE_COUNT       = "ie.count";
-    private static final String KEY_IE_PREFIX      = "ie.";
-    private static final String KEY_VOCAB_URI      = "vocab.uri";
-    private static final String KEY_RDF_SOURCE     = "rdf.source";
+    private static final String KEY_OUTPUT_DIR        = "outputDirectory";
+    private static final String KEY_UC_NAME           = "usecase.name";
+    private static final String KEY_UC_DESCRIPTION    = "usecase.description";
+    private static final String KEY_UC_FITNESS        = "usecase.fitnessRequirementsText";
+    private static final String KEY_UC_SCOPE_NOTE     = "usecase.scopeNote";
+    private static final String KEY_IE_COUNT          = "ie.count";
+    private static final String KEY_IE_PREFIX         = "ie.";
+    private static final String KEY_VOCAB_URI         = "vocab.uri";
+    private static final String KEY_RDF_SOURCE        = "rdf.source";
 
     /**
      * Saves the given {@link ProjectState} to a properties file.
@@ -69,6 +71,12 @@ public class ProjectStateSerializer {
             }
             if (uc.getDescription() != null) {
                 props.setProperty(KEY_UC_DESCRIPTION, uc.getDescription());
+            }
+            if (uc.getFitnessRequirementsText() != null) {
+                props.setProperty(KEY_UC_FITNESS, uc.getFitnessRequirementsText());
+            }
+            if (uc.getScopeNote() != null) {
+                props.setProperty(KEY_UC_SCOPE_NOTE, uc.getScopeNote());
             }
         }
         int count = state.getInformationElements().size();
@@ -118,6 +126,14 @@ public class ProjectStateSerializer {
         String ucDesc = props.getProperty(KEY_UC_DESCRIPTION);
         if (ucDesc != null) {
             uc.setDescription(ucDesc);
+        }
+        String ucFitness = props.getProperty(KEY_UC_FITNESS);
+        if (ucFitness != null && !ucFitness.trim().isEmpty()) {
+            uc.setFitnessRequirementsText(ucFitness);
+        }
+        String ucScopeNote = props.getProperty(KEY_UC_SCOPE_NOTE);
+        if (ucScopeNote != null && !ucScopeNote.trim().isEmpty()) {
+            uc.setScopeNote(ucScopeNote);
         }
         state.setUseCaseDraft(uc);
         String countStr = props.getProperty(KEY_IE_COUNT, "0");

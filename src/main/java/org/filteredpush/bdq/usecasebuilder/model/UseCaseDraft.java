@@ -3,14 +3,15 @@ package org.filteredpush.bdq.usecasebuilder.model;
 /**
  * A draft definition for a BDQ use case being authored by the user.
  *
- * <p>Captures the name, description, and fitness-for-use requirements narrative
- * for the use case.</p>
+ * <p>Captures the name, description, fitness-for-use requirements narrative,
+ * and optional scope note for the use case.</p>
  */
 public class UseCaseDraft {
 
     private String name;
     private String description;
     private String fitnessRequirementsText;
+    private String scopeNote;
 
     /** Creates an empty use case draft. */
     public UseCaseDraft() {
@@ -51,6 +52,19 @@ public class UseCaseDraft {
     /** Sets the fitness-for-use requirements narrative. */
     public void setFitnessRequirementsText(String fitnessRequirementsText) {
         this.fitnessRequirementsText = fitnessRequirementsText;
+    }
+
+    /**
+     * Returns the optional scope note for this use case
+     * (serialised as {@code skos:scopeNote} in RDF).
+     */
+    public String getScopeNote() {
+        return scopeNote;
+    }
+
+    /** Sets the optional scope note. */
+    public void setScopeNote(String scopeNote) {
+        this.scopeNote = scopeNote;
     }
 
     @Override
