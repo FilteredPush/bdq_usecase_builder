@@ -37,6 +37,10 @@ public class TestDraft {
     private final List<AuthorityDefault> authorityDefaults = new ArrayList<>();
     private final List<ParameterDefinition> parameterDefinitions = new ArrayList<>();
     private final List<ConformanceRow> conformanceRows = new ArrayList<>();
+    /** True if this test consults an external source authority. */
+    private boolean hasSourceAuthority = false;
+    /** True if this test accepts one or more parameters. */
+    private boolean hasParameters = false;
 
     /** Creates an empty test draft. */
     public TestDraft() {
@@ -309,6 +313,26 @@ public class TestDraft {
         if (rows != null) {
             conformanceRows.addAll(rows);
         }
+    }
+
+    /** Returns {@code true} if this test consults an external source authority. */
+    public boolean isHasSourceAuthority() {
+        return hasSourceAuthority;
+    }
+
+    /** Sets whether this test consults an external source authority. */
+    public void setHasSourceAuthority(boolean hasSourceAuthority) {
+        this.hasSourceAuthority = hasSourceAuthority;
+    }
+
+    /** Returns {@code true} if this test accepts one or more parameters. */
+    public boolean isHasParameters() {
+        return hasParameters;
+    }
+
+    /** Sets whether this test accepts parameters. */
+    public void setHasParameters(boolean hasParameters) {
+        this.hasParameters = hasParameters;
     }
 
     @Override

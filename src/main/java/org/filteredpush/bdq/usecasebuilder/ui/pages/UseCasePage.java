@@ -236,7 +236,15 @@ public class UseCasePage extends WizardPage {
         }
         fitnessLeadArea.setText(lead.toString());
         fitnessPropertiesArea.setText(bullets.toString());
-        fitnessLeadUserEdited = !lead.toString().trim().isEmpty();
+        // Only mark as user-edited if the text is non-empty AND is not just the auto-generated template
+        String leadText = lead.toString().trim();
+        fitnessLeadUserEdited = !leadText.isEmpty() && !isDefaultFitnessLeadTemplate(leadText);
+    }
+
+    private boolean isDefaultFitnessLeadTemplate(String text) {
+        return text != null
+                && text.startsWith("Data are fit for use for ")
+                && text.endsWith(" if they...");
     }
 
     private String buildFitnessRequirementsText() {

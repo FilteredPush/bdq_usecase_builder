@@ -75,6 +75,8 @@ public class GapAnalysisPage extends WizardPage {
     private JTextArea rationaleArea;
     private JTextArea notesArea;
     private JLabel coverageSummaryLabel;
+    private DefaultListModel<String> unlinkedTestsModel;
+    private JList<String> unlinkedTestsList;
 
     private final Map<String, String> existingOptionToIri = new LinkedHashMap<>();
     private final Map<String, String> iriToExistingOption = new LinkedHashMap<>();
@@ -108,6 +110,7 @@ public class GapAnalysisPage extends WizardPage {
         refreshTestOptionsForRow(getSelectedRow());
         refreshMappedLists(getSelectedRow());
         refreshCoverageSummary();
+        refreshUnlinkedTests();
     }
 
     @Override
@@ -351,7 +354,10 @@ public class GapAnalysisPage extends WizardPage {
 
     private JPanel buildBottomPanel() {
         JPanel panel = new JPanel(new BorderLayout(4, 4));
-        panel.setBorder(BorderFactory.createTitledBorder("Notes for selected requirement"));
+
+        // Notes/rationale sub-panel
+        JPanel notesPanel = new JPanel(new BorderLayout(4, 4));
+        notesPanel.setBorder(BorderFactory.createTitledBorder("Notes for selected requirement"));
         rationaleArea = new JTextArea(2, 40);
         rationaleArea.setLineWrap(true);
         rationaleArea.setWrapStyleWord(true);
@@ -361,11 +367,25 @@ public class GapAnalysisPage extends WizardPage {
         JPanel labels = new JPanel(new GridLayout(1, 2, 8, 0));
         labels.add(new JLabel("Partial coverage rationale:"));
         labels.add(new JLabel("Notes:"));
-        panel.add(labels, BorderLayout.NORTH);
+        notesPanel.add(labels, BorderLayout.NORTH);
         JPanel areas = new JPanel(new GridLayout(1, 2, 8, 0));
         areas.add(new JScrollPane(rationaleArea));
         areas.add(new JScrollPane(notesArea));
-        panel.add(areas, BorderLayout.CENTER);
+        notesPanel.add(areas, BorderLayout.CENTER);
+        panel.add(notesPanel, BorderLayout.CENTER);
+
+        // Unlinked new-draft tests sub-panel
+        JPanel unlinkedPanel = new JPanel(new BorderLayout(4, 4));
+        unlinkedPanel.setBorder(BorderFactory.createTitledBorder(
+                "New draft tests not linked to any requirement (⚡)"));
+        unlinkedTestsModel = new DefaultListModel<>();
+        unlinkedTestsList = new JList<>(unlinkedTestsModel);
+        unlinkedTestsList.setVisibleRowCount(3);
+        unlinkedTestsList.setToolTipText(
+                "These new draft tests exist but have not been linked to any requirement row");
+        unlinkedPanel.add(new JScrollPane(unlinkedTestsList), BorderLayout.CENTER);
+        panel.add(unlinkedPanel, BorderLayout.SOUTH);
+
         return panel;
     }
 
@@ -595,6 +615,7 @@ public class GapAnalysisPage extends WizardPage {
         tableModel.fireTableDataChanged();
         refreshMappedLists(row);
         refreshCoverageSummary();
+        refreshUnlinkedTests();
     }
 
     private void saveDetails(RequirementCoverage row) {
@@ -635,6 +656,32 @@ public class GapAnalysisPage extends WizardPage {
         }
         for (String label : row.getLinkedNewTests()) {
             mappedNewTestsModel.addElement(label);
+        }
+    }
+
+    /**
+     * Recomputes which new draft tests are not linked to any requirement row
+     * and refreshes the unlinked-tests list.
+     */
+    private void refreshUnlinkedTests() {
+        if (unlinkedTestsModel == null) {
+            return;
+        }
+        // Collect all new-test labels that are linked to at least one row
+        Set<String> linkedLabels = new HashSet<>();
+        for (RequirementCoverage row : tableModel.getRows()) {
+            linkedLabels.addAll(row.getLinkedNewTests());
+        }
+        unlinkedTestsModel.clear();
+        for (TestDraft draft : state.getNewTestDrafts()) {
+            String label = draft.getLabel() != null && !draft.getLabel().trim().isEmpty()
+                    ? draft.getLabel().trim() : draft.toString();
+            if (!linkedLabels.contains(label)) {
+                unlinkedTestsModel.addElement("⚡ " + label);
+            }
+        }
+        if (unlinkedTestsModel.isEmpty()) {
+            unlinkedTestsModel.addElement("(all new draft tests are linked)");
         }
     }
 

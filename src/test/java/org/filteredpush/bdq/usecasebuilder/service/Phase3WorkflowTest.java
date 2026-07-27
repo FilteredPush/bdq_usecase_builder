@@ -256,10 +256,10 @@ public class Phase3WorkflowTest {
         clause.setCommentTemplate("Scientific name present and well-formed");
 
         String text = clause.toString();
-        assertTrue(text.contains("IF"), "Clause text should contain IF");
-        assertTrue(text.contains("THEN"), "Clause text should contain THEN");
-        assertTrue(text.contains("RUN_HAS_RESULT"), "Clause text should contain status");
-        assertTrue(text.contains("COMPLIANT"), "Clause text should contain result");
+        // New compact format: "RESULT if condition"
+        assertTrue(text.contains("COMPLIANT"), "Clause text should contain outcome COMPLIANT");
+        assertTrue(text.contains(" if "), "Clause text should contain ' if '");
+        assertTrue(text.contains("dwc:scientificName"), "Clause text should contain condition");
     }
 
     @Test
@@ -270,8 +270,9 @@ public class Phase3WorkflowTest {
         elseClause.setResult("NOT_COMPLIANT");
 
         String text = elseClause.toString();
-        assertTrue(text.contains("ELSE"), "Else clause text should contain ELSE");
-        assertFalse(text.contains("IF"), "Else clause should not contain IF");
+        assertTrue(text.contains("otherwise"), "Else clause text should contain 'otherwise'");
+        assertTrue(text.contains("NOT_COMPLIANT"), "Else clause text should contain result");
+        assertFalse(text.contains(" if "), "Else clause should not contain ' if '");
     }
 
     // -----------------------------------------------------------------------

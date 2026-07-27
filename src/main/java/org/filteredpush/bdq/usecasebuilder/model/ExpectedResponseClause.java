@@ -51,36 +51,39 @@ public class ExpectedResponseClause {
         this.commentTemplate = commentTemplate;
     }
 
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        if (elseClause) {
-            sb.append("ELSE");
-        } else {
-            sb.append("IF ").append(condition != null ? condition : "");
-        }
-        sb.append(" THEN");
-        boolean hasAssignment = false;
+    /**
+     * Returns the human-readable outcome token for this clause.
+     *
+     * <p>When status is {@code RUN_HAS_RESULT}, the {@code result} value
+     * (e.g. {@code COMPLIANT}) is the visible outcome. For prerequisite-not-met
+     * statuses the status itself is the visible outcome.</p>
+     */
+    public String getOutcomeToken() {
         String statusValue = status != null ? status.trim() : "";
         String resultValue = result != null ? result.trim() : "";
-        String commentValue = commentTemplate != null ? commentTemplate.trim() : "";
-        if (!statusValue.isEmpty()) {
-            sb.append(" status=").append(statusValue);
-            hasAssignment = true;
+        if (!statusValue.isEmpty() && !"RUN_HAS_RESULT".equals(statusValue)) {
+            return statusValue;
         }
         if (!resultValue.isEmpty()) {
-            if (hasAssignment) {
-                sb.append(';');
-            }
-            sb.append(" result=").append(resultValue);
-            hasAssignment = true;
+            return resultValue;
         }
-        if (!commentValue.isEmpty()) {
-            if (hasAssignment) {
-                sb.append(';');
-            }
-            sb.append(" comment=").append(commentValue);
+        return statusValue.isEmpty() ? "(unknown)" : statusValue;
+    }
+
+    /**
+     * Returns the clause as a compact, human-readable string in the form:
+     * <ul>
+     *   <li>{@code RESULT if condition} for a regular clause</li>
+     *   <li>{@code otherwise RESULT} for an else/fallback clause</li>
+     * </ul>
+     */
+    @Override
+    public String toString() {
+        String outcomeToken = getOutcomeToken();
+        if (elseClause) {
+            return "otherwise " + outcomeToken;
         }
-        return sb.toString();
+        String cond = condition != null ? condition.trim() : "";
+        return outcomeToken + " if " + cond;
     }
 }
