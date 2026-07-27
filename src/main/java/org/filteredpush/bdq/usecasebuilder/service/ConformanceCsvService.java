@@ -74,7 +74,7 @@ public class ConformanceCsvService {
         try (PrintWriter pw = new PrintWriter(file, StandardCharsets.UTF_8.name())) {
             pw.println("TestLabel,Label,Response.status,Response.result,Response.comment");
             for (TestDraft draft : state.getNewTestDrafts()) {
-                String testLabel = draft.getLabel() != null ? draft.getLabel() : "";
+                String testLabel = nvl(draft.getLabel());
                 for (ConformanceRow row : draft.getConformanceRows()) {
                     pw.println(csv(testLabel) + "," + csv(row.getValues().get("Label")) + ","
                             + csv(row.getValues().get("Response.status")) + ","

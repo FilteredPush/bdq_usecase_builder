@@ -110,7 +110,7 @@ public class ParameterDefaultsPage extends WizardPage {
 
     private JPanel buildAuthorityPanel() {
         JPanel panel = new JPanel(new BorderLayout(4, 4));
-        panel.setBorder(BorderFactory.createTitledBorder("Authorities defaults"));
+        panel.setBorder(BorderFactory.createTitledBorder("Authority defaults"));
         authorityTableModel = new AuthorityTableModel();
         JTable table = new JTable(authorityTableModel);
         JComboBox<AuthorityPatternType> patternTypeCombo = new JComboBox<>(AuthorityPatternType.values());
