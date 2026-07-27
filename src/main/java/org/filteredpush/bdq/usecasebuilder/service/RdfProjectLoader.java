@@ -106,7 +106,6 @@ public class RdfProjectLoader {
             BDQCORE_NS + "Issue"
         };
         for (String typeUri : testTypeUris) {
-            Property typeProperty = model.createProperty(typeUri);
             ResIterator it = model.listSubjectsWithProperty(RDF.type,
                     model.createResource(typeUri));
             while (it.hasNext()) {
@@ -143,10 +142,10 @@ public class RdfProjectLoader {
      *         empty if none found or load fails
      */
     public List<String> loadVocabularyTerms(String source) {
-        List<String> terms = new ArrayList<>();
+        java.util.LinkedHashSet<String> termSet = new java.util.LinkedHashSet<>();
         Model model = loadModel(source);
         if (model == null) {
-            return terms;
+            return new ArrayList<>();
         }
         String[] propTypeUris = {
             "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
@@ -164,11 +163,12 @@ public class RdfProjectLoader {
                 }
                 String uri = res.getURI();
                 String qname = resolveQName(model, uri);
-                if (qname != null && !terms.contains(qname)) {
-                    terms.add(qname);
+                if (qname != null) {
+                    termSet.add(qname);
                 }
             }
         }
+        List<String> terms = new ArrayList<>(termSet);
         logger.info("Loaded {} vocabulary terms from: {}", terms.size(), source);
         return terms;
     }

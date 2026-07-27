@@ -129,7 +129,9 @@ public class NewTestPage extends WizardPage {
             "INTERNAL_PREREQUISITES_NOT_MET",
             "EXTERNAL_PREREQUISITES_NOT_MET");
     private static final float IE_BUTTON_FONT_SIZE = 11.0f;
-    private static final int MAX_AUTOCOMPLETE_RESULTS = 50;
+    /** Pre-compiled pattern for detecting bdqffdq: parameter references in expected responses. */
+    private static final java.util.regex.Pattern PARAM_PATTERN =
+            java.util.regex.Pattern.compile("\\bbdqffdq:[A-Za-z]*[Pp]arameter\\b");
 
     /**
      * Creates the new test definition page.
@@ -1008,9 +1010,7 @@ public class NewTestPage extends WizardPage {
         // bdqffdq:Parameter or any "...Parameter" token → parameters flag
         if (response.contains("bdqffdq:Parameter")
                 || response.contains("Parameter")
-                || java.util.regex.Pattern.compile(
-                        "\\bbdqffdq:[A-Za-z]*[Pp]arameter\\b")
-                    .matcher(response).find()) {
+                || PARAM_PATTERN.matcher(response).find()) {
             hasParametersCheck.setSelected(true);
         }
     }

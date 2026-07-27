@@ -526,7 +526,7 @@ public class GapAnalysisPage extends WizardPage {
             String fullText = reqId.isEmpty() ? reqSummary : (reqSummary.isEmpty()
                     ? reqId : reqId + ": " + reqSummary);
             selectedRequirementLabel.setText("<html><b>Requirement:</b> "
-                    + fullText.replace("&", "&amp;").replace("<", "&lt;")
+                    + fullText.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
                     + "</html>");
         }
         setAssignmentEnabled(true);
