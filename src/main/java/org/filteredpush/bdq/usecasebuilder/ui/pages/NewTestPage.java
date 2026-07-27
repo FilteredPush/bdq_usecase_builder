@@ -16,6 +16,7 @@ import org.filteredpush.bdq.usecasebuilder.service.VocabularyService;
 import org.filteredpush.bdq.usecasebuilder.ui.WizardPage;
 
 import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -24,6 +25,7 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -33,6 +35,7 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Insets;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -47,9 +50,15 @@ import java.util.Set;
  * shows existing drafts; selecting a draft populates the form on the right for
  * editing. The user can add new drafts or delete existing ones.</p>
  *
- * <p>Field order: Type → Resource type → Information element → Label →
- * Preferred label → Dimension → Criterion/Enhancement → Use-case reference →
- * Expected response clauses → Notes → Source authority → Parameters.</p>
+ * <p>Phase 3 enhancements:</p>
+ * <ul>
+ *   <li>Multi-valued information elements with explicit ActedUpon / Consulted roles.</li>
+ *   <li>Compact two-column layout: Type+ResourceType on one row; Dimension+Criterion on one row;
+ *       source authority and parameters checkboxes on one row.</li>
+ *   <li>Save button disabled until a label is provided.</li>
+ *   <li>Label auto-suggestion fires on every IE change; manual "Suggest" button overrides user edits.</li>
+ *   <li>Source-authority and parameters flags are auto-detected from the expected-response text.</li>
+ * </ul>
  */
 public class NewTestPage extends WizardPage {
 
@@ -57,14 +66,33 @@ public class NewTestPage extends WizardPage {
     private final DefaultListModel<TestDraft> listModel = new DefaultListModel<>();
     private JList<TestDraft> draftList;
 
-    // Form fields (reordered per feedback: type first, then IEs, then labels)
+    // ---- Form fields ----
+
+    // Compact row 0: Type + Resource type
     private JComboBox<TestType> typeCombo;
     private JComboBox<ResourceType> resourceTypeCombo;
-    private JComboBox<String> informationElementCombo;
+
+    // Multi-IE panel (row 1)
+    private JComboBox<String> ieAddCombo;        // combo to select/type the term to add
+    private JRadioButton actedUponRadio;
+    private JRadioButton consultedRadio;
+    private JButton addIeButton;
+    private DefaultListModel<String> actedUponListModel;
+    private DefaultListModel<String> consultedListModel;
+    private JList<String> actedUponList;
+    private JList<String> consultedList;
+    private JButton removeActedUponButton;
+    private JButton removeConsultedButton;
+
+    // Label row (row 2) + Suggest button
     private JTextField labelField;
+    private JButton suggestLabelsButton;
     private JTextField prefLabelField;
+
+    // Compact row 3: Dimension + Criterion/Enhancement
     private JComboBox<String> dimensionCombo;
     private JComboBox<String> criterionCombo;
+
     private JComboBox<String> useCaseRefCombo;
     private JComboBox<String> responseValueCombo;
     private JTextField responseConditionField;
@@ -73,8 +101,11 @@ public class NewTestPage extends WizardPage {
     private JList<ExpectedResponseClause> responseClauseList;
     private JTextArea expectedResponseArea;
     private JTextArea notesArea;
+
+    // Compact: both checkboxes on one row
     private JCheckBox hasSourceAuthorityCheck;
     private JCheckBox hasParametersCheck;
+
     private JButton addIfButton;
     private JButton addElseButton;
     private JButton removeClauseButton;
@@ -98,6 +129,7 @@ public class NewTestPage extends WizardPage {
             "INTERNAL_PREREQUISITES_NOT_MET",
             "EXTERNAL_PREREQUISITES_NOT_MET");
     private static final float IE_BUTTON_FONT_SIZE = 11.0f;
+    private static final int MAX_AUTOCOMPLETE_RESULTS = 50;
 
     /**
      * Creates the new test definition page.
@@ -167,9 +199,8 @@ public class NewTestPage extends WizardPage {
         JLabel guidance = new JLabel(
                 "<html><b>Define new BDQ tests.</b> What: the descriptors needed to represent a new test.<br>"
                         + "Why: consistent descriptors make the test reusable across use cases.<br>"
-                        + "Convention: select Type first, pick Information Elements, then labels are suggested "
-                        + "automatically. Use the IF condition helper to build expected-response clauses. "
-                        + "Fields marked <b>*</b> are required.</html>");
+                        + "Convention: select Type first, pick Information Elements (ActedUpon/Consulted), "
+                        + "then labels are suggested automatically. Fields marked <b>*</b> are required.</html>");
         guidance.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
         add(guidance, BorderLayout.NORTH);
 
@@ -220,11 +251,44 @@ public class NewTestPage extends WizardPage {
         // ---- Field construction ----
         typeCombo = new JComboBox<>(TestType.values());
         resourceTypeCombo = new JComboBox<>(ResourceType.values());
-        informationElementCombo = new JComboBox<>();
-        informationElementCombo.setEditable(true);
-        informationElementCombo.setToolTipText("Information element this test evaluates (required)");
+
+        // Multi-IE fields
+        ieAddCombo = new JComboBox<>();
+        ieAddCombo.setEditable(true);
+        ieAddCombo.setToolTipText("Select or type the information element to add");
+        actedUponRadio = new JRadioButton("ActedUpon", true);
+        actedUponRadio.setToolTipText("The test acts directly on this element");
+        consultedRadio = new JRadioButton("Consulted");
+        consultedRadio.setToolTipText("The test consults this element without directly modifying it");
+        ButtonGroup roleGroup = new ButtonGroup();
+        roleGroup.add(actedUponRadio);
+        roleGroup.add(consultedRadio);
+        addIeButton = new JButton("Add");
+        addIeButton.setToolTipText("Add the selected term to the appropriate list");
+        addIeButton.addActionListener(e -> addIeToList());
+
+        actedUponListModel = new DefaultListModel<>();
+        actedUponList = new JList<>(actedUponListModel);
+        actedUponList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        actedUponList.setVisibleRowCount(3);
+        consultedListModel = new DefaultListModel<>();
+        consultedList = new JList<>(consultedListModel);
+        consultedList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        consultedList.setVisibleRowCount(3);
+
+        removeActedUponButton = new JButton("Remove");
+        removeActedUponButton.setFont(removeActedUponButton.getFont().deriveFont(11.0f));
+        removeActedUponButton.addActionListener(e -> removeSelectedIes(actedUponList, actedUponListModel));
+        removeConsultedButton = new JButton("Remove");
+        removeConsultedButton.setFont(removeConsultedButton.getFont().deriveFont(11.0f));
+        removeConsultedButton.addActionListener(e -> removeSelectedIes(consultedList, consultedListModel));
+
         labelField = new JTextField(30);
-        labelField.setToolTipText("Machine-readable label: TESTTYPE_INFORMATIONELEMENT_EVALUATION (auto-suggested)");
+        labelField.setToolTipText("Machine-readable label: TESTTYPE_IE_EVALUATION (auto-suggested; required)");
+        suggestLabelsButton = new JButton("Suggest");
+        suggestLabelsButton.setToolTipText("Generate/regenerate label and preferred label from current type and IEs");
+        suggestLabelsButton.addActionListener(e -> forceApplySuggestions());
+
         prefLabelField = new JTextField(30);
         prefLabelField.setToolTipText("Human-readable preferred label (skos:prefLabel, auto-suggested)");
         dimensionCombo = new JComboBox<>();
@@ -258,25 +322,39 @@ public class NewTestPage extends WizardPage {
         hasParametersCheck = new JCheckBox("This test accepts parameters");
         hasParametersCheck.setToolTipText("Check if the test accepts parameters; lists it in the authorities/parameters section");
 
-        // ---- Field order per feedback: Type → Resource type → IE → Label → PrefLabel → Dimension → Criterion → Use case ----
+        // ---- Row layout ----
         int row = 0;
-        addRow(testDetailsPanel, "Type *:", typeCombo, row++);
-        addRow(testDetailsPanel, "Resource type:", resourceTypeCombo, row++);
-        addRow(testDetailsPanel, "Information element *:", informationElementCombo, row++);
-        addRow(testDetailsPanel, "Label *:", labelField, row++);
+
+        // Row 0: compact – Type + Resource type on one row
+        addRow(testDetailsPanel, "Type *:", buildTypeResPanel(), row++);
+
+        // Row 1: Multi-IE panel (spans full width, with some height)
+        testDetailsPanel.add(new JLabel("<html>Info elements *:</html>"), labelConstraints(row));
+        GridBagConstraints iefc = fieldConstraints(row++);
+        iefc.fill = GridBagConstraints.BOTH;
+        iefc.weighty = 0.25;
+        testDetailsPanel.add(buildIePanel(), iefc);
+
+        // Row 2: Label + Suggest button
+        addRow(testDetailsPanel, "Label *:", buildLabelPanel(), row++);
+
+        // Row 3: Preferred label
         addRow(testDetailsPanel, "Preferred label *:", prefLabelField, row++);
-        addRow(testDetailsPanel, "Dimension *:", dimensionCombo, row++);
-        addRow(testDetailsPanel, "Criterion/Enhancement:", criterionCombo, row++);
+
+        // Row 4: compact – Dimension + Criterion/Enhancement on one row
+        addRow(testDetailsPanel, "Dimension *:", buildDimCritPanel(), row++);
+
+        // Row 5: Use-case reference
         addRow(testDetailsPanel, "Use-case reference *:", useCaseRefCombo, row++);
 
-        // IE quick-insert helpers
+        // Row 6: IE quick-insert helpers
         GridBagConstraints lc = labelConstraints(row);
         testDetailsPanel.add(new JLabel("Insert into condition:"), lc);
         ieInsertPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         GridBagConstraints fc = fieldConstraints(row++);
         testDetailsPanel.add(ieInsertPanel, fc);
 
-        // IF condition row
+        // Row 7: IF condition
         lc = labelConstraints(row);
         testDetailsPanel.add(new JLabel("IF condition:"), lc);
         JPanel clausePanel = new JPanel(new BorderLayout(4, 0));
@@ -290,13 +368,13 @@ public class NewTestPage extends WizardPage {
         fc = fieldConstraints(row++);
         testDetailsPanel.add(clausePanel, fc);
 
-        // Comment template row
+        // Row 8: Comment template
         lc = labelConstraints(row);
         testDetailsPanel.add(new JLabel("Comment template:"), lc);
         fc = fieldConstraints(row++);
         testDetailsPanel.add(responseCommentField, fc);
 
-        // Clauses list row
+        // Row 9: Clauses list
         lc = labelConstraints(row);
         testDetailsPanel.add(new JLabel("Clauses:"), lc);
         fc = fieldConstraints(row++);
@@ -304,13 +382,13 @@ public class NewTestPage extends WizardPage {
         fc.weighty = 0.4;
         testDetailsPanel.add(new JScrollPane(responseClauseList), fc);
 
-        // Clause control buttons
+        // Row 10: Clause control buttons
         JPanel clauseButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         addElseButton = new JButton("Add ELSE");
         addElseButton.setToolTipText("Add an ELSE (fallback) clause");
         addElseButton.addActionListener(e -> addExpectedResponseClause(true));
         JButton addOtherwiseButton = new JButton("Add otherwise →");
-        addOtherwiseButton.setToolTipText("Quick-add \"otherwise NOT_COMPLIANT\" (or AMENDED for Amendment type)");
+        addOtherwiseButton.setToolTipText("Quick-add the type-appropriate else clause (e.g. otherwise NOT_COMPLIANT)");
         addOtherwiseButton.addActionListener(e -> addOtherwiseClause());
         removeClauseButton = new JButton("Remove");
         removeClauseButton.addActionListener(e -> removeSelectedClause());
@@ -330,7 +408,7 @@ public class NewTestPage extends WizardPage {
         rc.insets = new Insets(2, 0, 0, 0);
         testDetailsPanel.add(clauseButtons, rc);
 
-        // Expected response preview
+        // Row 11: Expected response preview
         lc = labelConstraints(row);
         testDetailsPanel.add(new JLabel("Expected response:"), lc);
         fc = fieldConstraints(row++);
@@ -338,7 +416,7 @@ public class NewTestPage extends WizardPage {
         fc.weighty = 0.6;
         testDetailsPanel.add(new JScrollPane(expectedResponseArea), fc);
 
-        // Notes
+        // Row 12: Notes
         lc = labelConstraints(row);
         testDetailsPanel.add(new JLabel("Notes:"), lc);
         fc = fieldConstraints(row++);
@@ -346,14 +424,16 @@ public class NewTestPage extends WizardPage {
         fc.weighty = 0.4;
         testDetailsPanel.add(new JScrollPane(notesArea), fc);
 
-        // Source authority and parameters checkboxes
+        // Row 13: compact – both checkboxes on one row
+        JPanel checkboxPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 16, 0));
+        checkboxPanel.add(hasSourceAuthorityCheck);
+        checkboxPanel.add(hasParametersCheck);
         fc = fieldConstraints(row++);
-        testDetailsPanel.add(hasSourceAuthorityCheck, fc);
-        fc = fieldConstraints(row++);
-        testDetailsPanel.add(hasParametersCheck, fc);
+        testDetailsPanel.add(checkboxPanel, fc);
 
-        // Save button
+        // Row 14: Save button
         saveDraftButton = new JButton("Save draft");
+        saveDraftButton.setEnabled(false); // disabled until a label is entered
         saveDraftButton.addActionListener(e -> saveCurrentDraft());
         GridBagConstraints bc = new GridBagConstraints();
         bc.gridy = row;
@@ -362,14 +442,23 @@ public class NewTestPage extends WizardPage {
         bc.insets = new Insets(8, 0, 0, 0);
         testDetailsPanel.add(saveDraftButton, bc);
 
-        // Wire up type combo to refresh criterion picklist and response results
+        // ---- Wire up listeners ----
+
+        // Type combo: refresh criterion picklist + response values + suggestions
         typeCombo.addActionListener(e -> {
             refreshCriterionPicklistByType();
             applySuggestions();
         });
-        // Wire IE combo to trigger label suggestions
-        informationElementCombo.addActionListener(e -> applySuggestions());
-        // Wire dimension/criterion to trigger label suggestions
+
+        // IE add combo: trigger suggestions on every keystroke in the editor
+        if (ieAddCombo.getEditor() != null && ieAddCombo.getEditor().getEditorComponent() instanceof JTextField) {
+            JTextField editorField = (JTextField) ieAddCombo.getEditor().getEditorComponent();
+            editorField.getDocument().addDocumentListener(makeDocumentListener(this::applySuggestions));
+        }
+        // Also on action (Enter / selection)
+        ieAddCombo.addActionListener(e -> applySuggestions());
+
+        // Dimension / criterion combos: trigger suggestions
         dimensionCombo.addActionListener(e -> applySuggestions());
         criterionCombo.addActionListener(e -> applySuggestions());
 
@@ -377,7 +466,105 @@ public class NewTestPage extends WizardPage {
         labelField.getDocument().addDocumentListener(makeDocumentListener(this::onLabelManualEdit));
         prefLabelField.getDocument().addDocumentListener(makeDocumentListener(this::onPrefLabelManualEdit));
 
+        // Track label changes to enable/disable save button
+        labelField.getDocument().addDocumentListener(makeDocumentListener(this::updateSaveButtonState));
+
         return testDetailsPanel;
+    }
+
+    // -----------------------------------------------------------------------
+    // Compound panels (for compact rows)
+    // -----------------------------------------------------------------------
+
+    /** Builds [typeCombo | "Resource type:" | resourceTypeCombo] for a compact row. */
+    private JPanel buildTypeResPanel() {
+        JPanel p = new JPanel(new GridBagLayout());
+        GridBagConstraints gc = new GridBagConstraints();
+        gc.gridy = 0;
+        gc.fill = GridBagConstraints.HORIZONTAL;
+        gc.weightx = 1.0;
+        gc.insets = new Insets(0, 0, 0, 0);
+        gc.gridx = 0;
+        p.add(typeCombo, gc);
+        gc.fill = GridBagConstraints.NONE;
+        gc.weightx = 0;
+        gc.insets = new Insets(0, 10, 0, 4);
+        gc.gridx = 1;
+        p.add(new JLabel("Resource type:"), gc);
+        gc.fill = GridBagConstraints.HORIZONTAL;
+        gc.weightx = 1.0;
+        gc.insets = new Insets(0, 0, 0, 0);
+        gc.gridx = 2;
+        p.add(resourceTypeCombo, gc);
+        return p;
+    }
+
+    /** Builds the multi-IE management panel with ActedUpon and Consulted lists. */
+    private JPanel buildIePanel() {
+        JPanel panel = new JPanel(new BorderLayout(4, 4));
+
+        // Top: add-row (combo + role radios + Add button)
+        JPanel addRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        addRow.add(new JLabel("Term:"));
+        ieAddCombo.setPreferredSize(new java.awt.Dimension(220, ieAddCombo.getPreferredSize().height));
+        addRow.add(ieAddCombo);
+        addRow.add(actedUponRadio);
+        addRow.add(consultedRadio);
+        addRow.add(addIeButton);
+        panel.add(addRow, BorderLayout.NORTH);
+
+        // Center: two lists side by side
+        JPanel listsPanel = new JPanel(new GridLayout(1, 2, 6, 0));
+
+        JPanel actedPanel = new JPanel(new BorderLayout(2, 2));
+        actedPanel.setBorder(BorderFactory.createTitledBorder("Acted Upon"));
+        actedPanel.add(new JScrollPane(actedUponList), BorderLayout.CENTER);
+        JPanel actedBtns = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        actedBtns.add(removeActedUponButton);
+        actedPanel.add(actedBtns, BorderLayout.SOUTH);
+        listsPanel.add(actedPanel);
+
+        JPanel consultedPanel = new JPanel(new BorderLayout(2, 2));
+        consultedPanel.setBorder(BorderFactory.createTitledBorder("Consulted"));
+        consultedPanel.add(new JScrollPane(consultedList), BorderLayout.CENTER);
+        JPanel consultedBtns = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        consultedBtns.add(removeConsultedButton);
+        consultedPanel.add(consultedBtns, BorderLayout.SOUTH);
+        listsPanel.add(consultedPanel);
+
+        panel.add(listsPanel, BorderLayout.CENTER);
+        return panel;
+    }
+
+    /** Builds [labelField | "Suggest" button] for the label row. */
+    private JPanel buildLabelPanel() {
+        JPanel p = new JPanel(new BorderLayout(4, 0));
+        p.add(labelField, BorderLayout.CENTER);
+        p.add(suggestLabelsButton, BorderLayout.EAST);
+        return p;
+    }
+
+    /** Builds [dimensionCombo | "Criterion/Enhancement:" | criterionCombo] for a compact row. */
+    private JPanel buildDimCritPanel() {
+        JPanel p = new JPanel(new GridBagLayout());
+        GridBagConstraints gc = new GridBagConstraints();
+        gc.gridy = 0;
+        gc.fill = GridBagConstraints.HORIZONTAL;
+        gc.weightx = 1.0;
+        gc.insets = new Insets(0, 0, 0, 0);
+        gc.gridx = 0;
+        p.add(dimensionCombo, gc);
+        gc.fill = GridBagConstraints.NONE;
+        gc.weightx = 0;
+        gc.insets = new Insets(0, 10, 0, 4);
+        gc.gridx = 1;
+        p.add(new JLabel("Criterion/Enhancement:"), gc);
+        gc.fill = GridBagConstraints.HORIZONTAL;
+        gc.weightx = 1.0;
+        gc.insets = new Insets(0, 0, 0, 0);
+        gc.gridx = 2;
+        p.add(criterionCombo, gc);
+        return p;
     }
 
     /** Creates a simple DocumentListener that calls the given runnable on any change. */
@@ -451,7 +638,22 @@ public class NewTestPage extends WizardPage {
         typeCombo.setSelectedItem(draft.getType() != null ? draft.getType() : TestType.VALIDATION);
         resourceTypeCombo.setSelectedItem(
                 draft.getResourceType() != null ? draft.getResourceType() : ResourceType.SINGLE_RECORD);
-        informationElementCombo.setSelectedItem(nvl(draft.getInformationElement()));
+
+        // Load multi-IE lists
+        actedUponListModel.clear();
+        for (String ie : draft.getActedUponElements()) {
+            actedUponListModel.addElement(ie);
+        }
+        // Legacy single-field backward compat: if no actedUpon list but informationElement is set, add it
+        if (actedUponListModel.isEmpty() && draft.getInformationElement() != null
+                && !draft.getInformationElement().trim().isEmpty()) {
+            actedUponListModel.addElement(draft.getInformationElement().trim());
+        }
+        consultedListModel.clear();
+        for (String ie : draft.getConsultedElements()) {
+            consultedListModel.addElement(ie);
+        }
+
         refreshCriterionPicklistByType();
         dimensionCombo.setSelectedItem(nvl(draft.getDimension()));
         criterionCombo.setSelectedItem(nvl(draft.getCriterionOrEnhancement()));
@@ -473,6 +675,7 @@ public class NewTestPage extends WizardPage {
         hasSourceAuthorityCheck.setSelected(draft.isHasSourceAuthority());
         hasParametersCheck.setSelected(draft.isHasParameters());
         updatingForm = false;
+        updateSaveButtonState();
     }
 
     private void saveCurrentDraft() {
@@ -482,7 +685,14 @@ public class NewTestPage extends WizardPage {
         }
         draft.setType((TestType) typeCombo.getSelectedItem());
         draft.setResourceType((ResourceType) resourceTypeCombo.getSelectedItem());
-        draft.setInformationElement(getSelectedComboText(informationElementCombo));
+
+        // Save multi-IE lists
+        draft.setActedUponElements(listModelToList(actedUponListModel));
+        draft.setConsultedElements(listModelToList(consultedListModel));
+        // Keep legacy field in sync with the first acted-upon element
+        draft.setInformationElement(actedUponListModel.isEmpty()
+                ? "" : actedUponListModel.get(0));
+
         draft.setDimension(getSelectedComboText(dimensionCombo));
         draft.setCriterionOrEnhancement(getSelectedComboText(criterionCombo));
         draft.setUseCaseReference(getSelectedComboText(useCaseRefCombo));
@@ -504,7 +714,8 @@ public class NewTestPage extends WizardPage {
         updatingForm = true;
         typeCombo.setSelectedIndex(0);
         resourceTypeCombo.setSelectedIndex(0);
-        informationElementCombo.setSelectedItem("");
+        actedUponListModel.clear();
+        consultedListModel.clear();
         dimensionCombo.setSelectedItem("");
         refreshCriterionPicklistByType();
         criterionCombo.setSelectedItem("");
@@ -522,16 +733,23 @@ public class NewTestPage extends WizardPage {
         hasSourceAuthorityCheck.setSelected(false);
         hasParametersCheck.setSelected(false);
         updatingForm = false;
+        updateSaveButtonState();
     }
 
     private void refreshPicklists() {
+        // Populate ie add combo with use-case IEs first, then full vocabulary
         List<String> infoTerms = new ArrayList<>();
         for (InformationElementRef ref : state.getInformationElements()) {
             if (ref.getQname() != null && !ref.getQname().trim().isEmpty()) {
                 infoTerms.add(ref.getQname().trim());
             }
         }
-        resetComboItems(informationElementCombo, infoTerms);
+        // Also add full vocabulary terms (deduplicated)
+        LinkedHashSet<String> allTerms = new LinkedHashSet<>(infoTerms);
+        allTerms.addAll(vocabularyService.getInformationElementTerms());
+        resetComboItems(ieAddCombo, new ArrayList<>(allTerms));
+        ieAddCombo.setSelectedItem("");
+
         resetComboItems(dimensionCombo, vocabularyService.getBdqDimensions());
         LinkedHashSet<String> useCaseRefSet = new LinkedHashSet<>();
         String defaultUseCaseRef = getDefaultUseCaseReference();
@@ -604,6 +822,60 @@ public class NewTestPage extends WizardPage {
     }
 
     // -----------------------------------------------------------------------
+    // Multi-IE management
+    // -----------------------------------------------------------------------
+
+    /** Adds the term currently in ieAddCombo to the appropriate list (ActedUpon or Consulted). */
+    private void addIeToList() {
+        String term = getSelectedComboText(ieAddCombo);
+        if (term.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "Please select or type an information element term.",
+                    "No term",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (actedUponRadio.isSelected()) {
+            if (!containsItem(actedUponListModel, term)) {
+                actedUponListModel.addElement(term);
+            }
+        } else {
+            if (!containsItem(consultedListModel, term)) {
+                consultedListModel.addElement(term);
+            }
+        }
+        // Trigger label suggestion after adding an IE
+        applySuggestions();
+    }
+
+    /** Removes the selected items from the given list. */
+    private void removeSelectedIes(JList<String> list, DefaultListModel<String> model) {
+        List<String> selected = list.getSelectedValuesList();
+        for (String s : selected) {
+            model.removeElement(s);
+        }
+        // Refresh label suggestion (first IE may have changed)
+        applySuggestions();
+    }
+
+    private boolean containsItem(DefaultListModel<String> model, String item) {
+        for (int i = 0; i < model.size(); i++) {
+            if (model.get(i).equals(item)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private List<String> listModelToList(DefaultListModel<String> model) {
+        List<String> result = new ArrayList<>();
+        for (int i = 0; i < model.size(); i++) {
+            result.add(model.get(i));
+        }
+        return result;
+    }
+
+    // -----------------------------------------------------------------------
     // Label auto-suggestion
     // -----------------------------------------------------------------------
 
@@ -629,15 +901,52 @@ public class NewTestPage extends WizardPage {
                 updatingLabel = false;
             }
         }
+        updateSaveButtonState();
+    }
+
+    /**
+     * Forces label and prefLabel to be regenerated regardless of the user-override flags.
+     * Called when the user explicitly clicks the Suggest button.
+     */
+    private void forceApplySuggestions() {
+        TestDraft scratch = buildScratchDraft();
+        scratch.setLabelUserOverridden(false);
+        scratch.setPrefLabelUserOverridden(false);
+        String suggestedLabel = labelSuggestionService.suggestLabel(scratch);
+        String suggestedPrefLabel = labelSuggestionService.suggestPrefLabel(scratch);
+
+        // Update the real draft's override flags
+        TestDraft current = draftList.getSelectedValue();
+        if (current != null) {
+            current.setLabelUserOverridden(false);
+            current.setPrefLabelUserOverridden(false);
+        }
+
+        updatingLabel = true;
+        if (suggestedLabel != null) {
+            labelField.setText(suggestedLabel);
+        }
+        if (suggestedPrefLabel != null) {
+            prefLabelField.setText(suggestedPrefLabel);
+        }
+        updatingLabel = false;
+        updateSaveButtonState();
     }
 
     /** Builds a scratch TestDraft from the current form state for suggestion purposes. */
     private TestDraft buildScratchDraft() {
         TestDraft scratch = new TestDraft();
         scratch.setType((TestType) typeCombo.getSelectedItem());
-        String ie = getSelectedComboText(informationElementCombo);
-        if (!ie.isEmpty()) {
-            scratch.addActedUponElement(ie);
+        // Use the actedUpon list as the primary IEs for label generation
+        for (int i = 0; i < actedUponListModel.size(); i++) {
+            scratch.addActedUponElement(actedUponListModel.get(i));
+        }
+        // If empty, also try the currently typed term in the add combo
+        if (scratch.getActedUponElements().isEmpty()) {
+            String ie = getSelectedComboText(ieAddCombo);
+            if (!ie.isEmpty()) {
+                scratch.addActedUponElement(ie);
+            }
         }
         scratch.setDimension(getSelectedComboText(dimensionCombo));
         scratch.setCriterionOrEnhancement(getSelectedComboText(criterionCombo));
@@ -665,6 +974,44 @@ public class NewTestPage extends WizardPage {
             if (draft != null) {
                 draft.setPrefLabelUserOverridden(!prefLabelField.getText().trim().isEmpty());
             }
+        }
+    }
+
+    /** Updates the Save button enabled state based on whether a label has been entered. */
+    private void updateSaveButtonState() {
+        if (saveDraftButton != null) {
+            boolean hasLabel = labelField != null && !labelField.getText().trim().isEmpty();
+            boolean draftSelected = draftList != null && draftList.getSelectedValue() != null;
+            saveDraftButton.setEnabled(hasLabel && draftSelected);
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Auto-detection of source authority / parameter flags from expected response
+    // -----------------------------------------------------------------------
+
+    /**
+     * Scans the expected-response text and automatically sets the source-authority
+     * and parameters checkboxes when relevant tokens are detected.
+     *
+     * <p>Users may still override the checkboxes after auto-detection.</p>
+     */
+    private void autoDetectSourceAuthorityAndParameters() {
+        String response = expectedResponseArea.getText();
+        if (response == null || response.isEmpty()) {
+            return;
+        }
+        // sourceAuthority token → source authority flag
+        if (response.contains("sourceAuthority")) {
+            hasSourceAuthorityCheck.setSelected(true);
+        }
+        // bdqffdq:Parameter or any "...Parameter" token → parameters flag
+        if (response.contains("bdqffdq:Parameter")
+                || response.contains("Parameter")
+                || java.util.regex.Pattern.compile(
+                        "\\bbdqffdq:[A-Za-z]*[Pp]arameter\\b")
+                    .matcher(response).find()) {
+            hasParametersCheck.setSelected(true);
         }
     }
 
@@ -733,6 +1080,7 @@ public class NewTestPage extends WizardPage {
         responseConditionField.setText("");
         responseCommentField.setText("");
         expectedResponseArea.setText(clauseService.toCanonicalText(toClauseList(responseClauseListModel)));
+        autoDetectSourceAuthorityAndParameters();
     }
 
     /** Quick-adds the default "otherwise" else clause appropriate for the selected test type. */
@@ -751,6 +1099,7 @@ public class NewTestPage extends WizardPage {
         ExpectedResponseClause clause = buildClause(true, "", defaultOutcome, "");
         responseClauseListModel.addElement(clause);
         expectedResponseArea.setText(clauseService.toCanonicalText(toClauseList(responseClauseListModel)));
+        autoDetectSourceAuthorityAndParameters();
     }
 
     private ExpectedResponseClause buildClause(boolean elseClause, String condition,
@@ -869,8 +1218,16 @@ public class NewTestPage extends WizardPage {
     private void setTestDetailsEnabled(boolean enabled) {
         typeCombo.setEnabled(enabled);
         resourceTypeCombo.setEnabled(enabled);
-        informationElementCombo.setEnabled(enabled);
+        ieAddCombo.setEnabled(enabled);
+        actedUponRadio.setEnabled(enabled);
+        consultedRadio.setEnabled(enabled);
+        addIeButton.setEnabled(enabled);
+        actedUponList.setEnabled(enabled);
+        consultedList.setEnabled(enabled);
+        removeActedUponButton.setEnabled(enabled);
+        removeConsultedButton.setEnabled(enabled);
         labelField.setEnabled(enabled);
+        suggestLabelsButton.setEnabled(enabled);
         prefLabelField.setEnabled(enabled);
         dimensionCombo.setEnabled(enabled);
         criterionCombo.setEnabled(enabled);
@@ -888,7 +1245,11 @@ public class NewTestPage extends WizardPage {
         removeClauseButton.setEnabled(enabled);
         moveUpButton.setEnabled(enabled);
         moveDownButton.setEnabled(enabled);
-        saveDraftButton.setEnabled(enabled);
+        if (enabled) {
+            updateSaveButtonState(); // re-evaluate based on label content
+        } else {
+            saveDraftButton.setEnabled(false);
+        }
         if (ieInsertPanel != null) {
             ieInsertPanel.setEnabled(enabled);
             for (java.awt.Component c : ieInsertPanel.getComponents()) {

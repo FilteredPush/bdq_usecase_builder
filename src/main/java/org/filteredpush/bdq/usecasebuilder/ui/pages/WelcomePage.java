@@ -1,32 +1,56 @@
 package org.filteredpush.bdq.usecasebuilder.ui.pages;
 
+import org.filteredpush.bdq.usecasebuilder.model.InformationElementRef;
 import org.filteredpush.bdq.usecasebuilder.model.ProjectState;
+import org.filteredpush.bdq.usecasebuilder.model.UseCaseDraft;
+import org.filteredpush.bdq.usecasebuilder.service.ProjectStateSerializer;
+import org.filteredpush.bdq.usecasebuilder.service.RdfProjectLoader;
 import org.filteredpush.bdq.usecasebuilder.service.ValidationService;
 import org.filteredpush.bdq.usecasebuilder.ui.WizardPage;
 
 import javax.swing.BorderFactory;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.BorderLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.io.File;
 import java.util.List;
 
 /**
  * Wizard page 1 – Welcome and project setup.
  *
- * <p>Collects the output directory for exported artifacts. The user can either
- * type a path or browse using the native file chooser.</p>
+ * <p>Phase 3 additions:</p>
+ * <ul>
+ *   <li>Load an existing project file (saves/restores output dir, use case, and information
+ *       elements via a simple properties format).</li>
+ *   <li>Additional IE vocabulary URI – a machine-readable vocabulary whose terms will be
+ *       available on the Information Elements page.</li>
+ *   <li>Load tests and use cases from an additional RDF document.</li>
+ *   <li>Select an existing use case from the loaded RDF document to pre-fill the use case page.</li>
+ * </ul>
  */
 public class WelcomePage extends WizardPage {
 
     private JTextField outputDirField;
+    private JTextField vocabUriField;
+    private JTextField rdfSourceField;
+    private JComboBox<String> existingUseCaseCombo;
+
     private final ValidationService validationService = new ValidationService();
+    private final ProjectStateSerializer serializer = new ProjectStateSerializer();
+    private final RdfProjectLoader rdfLoader = new RdfProjectLoader();
+
+    private List<UseCaseDraft> loadedUseCases;
 
     /**
      * Creates the welcome page.
@@ -51,11 +75,19 @@ public class WelcomePage extends WizardPage {
     public void onEnter() {
         String dir = state.getOutputDirectory();
         outputDirField.setText(dir != null ? dir : "");
+        vocabUriField.setText(nvl(state.getAdditionalVocabUri()));
+        rdfSourceField.setText(nvl(state.getAdditionalRdfSource()));
     }
 
     @Override
     public void onLeave() {
         state.setOutputDirectory(outputDirField.getText().trim());
+        String vocabUri = vocabUriField.getText().trim();
+        state.setAdditionalVocabUri(vocabUri.isEmpty() ? null : vocabUri);
+        String rdfSrc = rdfSourceField.getText().trim();
+        state.setAdditionalRdfSource(rdfSrc.isEmpty() ? null : rdfSrc);
+        // Apply selected use case if user picked one from the loaded RDF
+        applySelectedUseCaseToState();
     }
 
     @Override
@@ -87,52 +119,254 @@ public class WelcomePage extends WizardPage {
                         + "<li>Defining new BDQ tests</li>"
                         + "<li>Exporting a summary of your work</li>"
                         + "</ul>"
-                        + "<p>Click <b>Next</b> to begin.</p>"
+                        + "<p>Click <b>Next</b> to begin, or use the options below to load an existing project "
+                        + "or extend the available vocabulary.</p>"
                         + "</html>");
         welcomeLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
         add(welcomeLabel, BorderLayout.NORTH);
 
-        // Output directory form
+        // Project setup form
         JPanel form = new JPanel(new GridBagLayout());
         form.setBorder(BorderFactory.createTitledBorder("Project setup"));
 
+        int row = 0;
+
+        // Row: Output directory
+        outputDirField = new JTextField(30);
+        outputDirField.setToolTipText("Directory where exported files will be written");
+        JButton browseDirButton = new JButton("Browse…");
+        browseDirButton.addActionListener(e -> browseForDirectory(outputDirField));
+        addFieldRow(form, "Output directory:", outputDirField, browseDirButton, row++);
+
+        // Row: Load existing project
+        JTextField projectFileField = new JTextField(30);
+        projectFileField.setEditable(false);
+        projectFileField.setToolTipText(
+                "Load a previously saved project file (restores output dir, use case, and information elements)");
+        JButton loadProjectButton = new JButton("Load…");
+        loadProjectButton.addActionListener(e -> loadProject(projectFileField));
+        addFieldRow(form, "Load project:", projectFileField, loadProjectButton, row++);
+
+        // Row: Save project button (right-aligned in second column)
+        GridBagConstraints saveBtnC = new GridBagConstraints();
+        saveBtnC.gridx = 1; saveBtnC.gridy = row++;
+        saveBtnC.anchor = GridBagConstraints.WEST;
+        saveBtnC.insets = new Insets(0, 0, 6, 6);
+        JButton saveProjectButton = new JButton("Save current project…");
+        saveProjectButton.setToolTipText("Save the current project state to a file");
+        saveProjectButton.addActionListener(e -> saveProject());
+        form.add(saveProjectButton, saveBtnC);
+
+        // Row: Additional IE vocabulary URI
+        vocabUriField = new JTextField(30);
+        vocabUriField.setToolTipText(
+                "URI of a machine-readable vocabulary (RDF/OWL) whose terms will be added to the IE picker");
+        JButton clearVocabButton = new JButton("Clear");
+        clearVocabButton.addActionListener(e -> vocabUriField.setText(""));
+        addFieldRow(form, "Additional IE vocabulary URI:", vocabUriField, clearVocabButton, row++);
+
+        // Row: Additional RDF source (tests + use cases)
+        rdfSourceField = new JTextField(30);
+        rdfSourceField.setToolTipText(
+                "Path or URI of an RDF document to load additional tests and use cases from");
+        JButton browseRdfButton = new JButton("Browse…");
+        browseRdfButton.addActionListener(e -> {
+            browseForFile(rdfSourceField, "RDF files", "ttl", "rdf", "owl", "jsonld", "n3", "nt");
+        });
+        addFieldRow(form, "Additional RDF source:", rdfSourceField, browseRdfButton, row++);
+
+        // Row: "Load RDF" action button
+        GridBagConstraints loadRdfC = new GridBagConstraints();
+        loadRdfC.gridx = 1; loadRdfC.gridy = row++;
+        loadRdfC.anchor = GridBagConstraints.WEST;
+        loadRdfC.insets = new Insets(0, 0, 6, 6);
+        JButton loadRdfButton = new JButton("Load use cases from RDF");
+        loadRdfButton.setToolTipText(
+                "Parse the RDF source to find use cases; the selected one will be used as the starting use case");
+        loadRdfButton.addActionListener(e -> loadUseCasesFromRdf());
+        form.add(loadRdfButton, loadRdfC);
+
+        // Row: Existing use case selector (populated after loading RDF)
+        existingUseCaseCombo = new JComboBox<>();
+        existingUseCaseCombo.addItem("(none – start fresh)");
+        existingUseCaseCombo.setToolTipText(
+                "Select an existing use case from the loaded RDF document or loaded project");
+        addFieldRow(form, "Select existing use case:", existingUseCaseCombo, null, row++);
+
+        add(form, BorderLayout.CENTER);
+    }
+
+    private void addFieldRow(JPanel form, String labelText,
+                              java.awt.Component field,
+                              java.awt.Component button,
+                              int gridy) {
         GridBagConstraints labelGbc = new GridBagConstraints();
+        labelGbc.gridx = 0;
+        labelGbc.gridy = gridy;
         labelGbc.anchor = GridBagConstraints.WEST;
         labelGbc.insets = new Insets(6, 6, 6, 6);
+        form.add(new JLabel(labelText), labelGbc);
 
         GridBagConstraints fieldGbc = new GridBagConstraints();
+        fieldGbc.gridx = 1;
+        fieldGbc.gridy = gridy;
         fieldGbc.fill = GridBagConstraints.HORIZONTAL;
         fieldGbc.weightx = 1.0;
         fieldGbc.insets = new Insets(6, 0, 6, 6);
+        form.add(field, fieldGbc);
 
-        GridBagConstraints buttonGbc = new GridBagConstraints();
-        buttonGbc.insets = new Insets(6, 0, 6, 6);
+        if (button != null) {
+            GridBagConstraints buttonGbc = new GridBagConstraints();
+            buttonGbc.gridx = 2;
+            buttonGbc.gridy = gridy;
+            buttonGbc.insets = new Insets(6, 0, 6, 6);
+            form.add(button, buttonGbc);
+        }
+    }
 
-        labelGbc.gridx = 0;
-        labelGbc.gridy = 0;
-        form.add(new JLabel("Output directory:"), labelGbc);
+    // -----------------------------------------------------------------------
+    // Action handlers
+    // -----------------------------------------------------------------------
 
-        outputDirField = new JTextField(30);
-        outputDirField.setToolTipText("Directory where exported files will be written");
-        fieldGbc.gridx = 1;
-        fieldGbc.gridy = 0;
-        form.add(outputDirField, fieldGbc);
+    private void browseForDirectory(JTextField targetField) {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        if (!targetField.getText().trim().isEmpty()) {
+            chooser.setCurrentDirectory(new File(targetField.getText().trim()));
+        }
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            targetField.setText(chooser.getSelectedFile().getAbsolutePath());
+        }
+    }
 
-        JButton browseButton = new JButton("Browse…");
-        browseButton.addActionListener(e -> {
-            JFileChooser chooser = new JFileChooser();
-            chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-            if (!outputDirField.getText().trim().isEmpty()) {
-                chooser.setCurrentDirectory(new java.io.File(outputDirField.getText().trim()));
+    private void browseForFile(JTextField targetField, String description, String... extensions) {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        if (extensions.length > 0) {
+            chooser.setFileFilter(new FileNameExtensionFilter(description, extensions));
+        }
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            targetField.setText(chooser.getSelectedFile().getAbsolutePath());
+        }
+    }
+
+    private void loadProject(JTextField projectFileDisplay) {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        chooser.setFileFilter(new FileNameExtensionFilter(
+                "BDQ project files (*.properties)", "properties"));
+        if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        File file = chooser.getSelectedFile();
+        try {
+            ProjectState loaded = serializer.load(file);
+            // Merge into current state (non-destructively)
+            state.setOutputDirectory(loaded.getOutputDirectory());
+            if (loaded.getUseCaseDraft() != null) {
+                state.setUseCaseDraft(loaded.getUseCaseDraft());
             }
-            if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-                outputDirField.setText(chooser.getSelectedFile().getAbsolutePath());
+            state.clearInformationElements();
+            for (InformationElementRef ref : loaded.getInformationElements()) {
+                state.addInformationElement(ref);
             }
-        });
-        buttonGbc.gridx = 2;
-        buttonGbc.gridy = 0;
-        form.add(browseButton, buttonGbc);
+            if (loaded.getAdditionalVocabUri() != null) {
+                state.setAdditionalVocabUri(loaded.getAdditionalVocabUri());
+            }
+            if (loaded.getAdditionalRdfSource() != null) {
+                state.setAdditionalRdfSource(loaded.getAdditionalRdfSource());
+            }
+            // Refresh displayed fields
+            onEnter();
+            projectFileDisplay.setText(file.getAbsolutePath());
+            JOptionPane.showMessageDialog(this,
+                    "Project loaded successfully from:\n" + file.getAbsolutePath(),
+                    "Project loaded",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Could not load project file:\n" + ex.getMessage(),
+                    "Load error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
 
-        add(form, BorderLayout.CENTER);
+    private void saveProject() {
+        onLeave(); // flush form → state first
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        chooser.setFileFilter(new FileNameExtensionFilter(
+                "BDQ project files (*.properties)", "properties"));
+        chooser.setSelectedFile(new File("bdq_project.properties"));
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        File file = chooser.getSelectedFile();
+        if (!file.getName().endsWith(".properties")) {
+            file = new File(file.getAbsolutePath() + ".properties");
+        }
+        try {
+            serializer.save(state, file);
+            JOptionPane.showMessageDialog(this,
+                    "Project saved to:\n" + file.getAbsolutePath(),
+                    "Project saved",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Could not save project file:\n" + ex.getMessage(),
+                    "Save error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void loadUseCasesFromRdf() {
+        String rdfSrc = rdfSourceField.getText().trim();
+        if (rdfSrc.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "Please enter an RDF source path or URI first.",
+                    "No RDF source",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        loadedUseCases = rdfLoader.loadUseCases(rdfSrc);
+        DefaultComboBoxModel<String> comboModel = new DefaultComboBoxModel<>();
+        comboModel.addElement("(none – start fresh)");
+        for (UseCaseDraft uc : loadedUseCases) {
+            comboModel.addElement(uc.getName() != null ? uc.getName() : "(unnamed use case)");
+        }
+        existingUseCaseCombo.setModel(comboModel);
+        if (loadedUseCases.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "No use cases found in the RDF document.\n" + rdfSrc,
+                    "No use cases",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this,
+                    "Found " + loadedUseCases.size() + " use case(s).\n"
+                    + "Select one from the drop-down to use as your starting use case.",
+                    "Use cases loaded",
+                    JOptionPane.INFORMATION_MESSAGE);
+        }
+        // Also store the RDF source in state
+        state.setAdditionalRdfSource(rdfSrc);
+    }
+
+    private void applySelectedUseCaseToState() {
+        if (loadedUseCases == null || loadedUseCases.isEmpty()) {
+            return;
+        }
+        int selectedIdx = existingUseCaseCombo.getSelectedIndex();
+        if (selectedIdx <= 0) {
+            return; // "(none – start fresh)" selected
+        }
+        int ucIdx = selectedIdx - 1; // offset for the "(none)" entry
+        if (ucIdx >= 0 && ucIdx < loadedUseCases.size()) {
+            UseCaseDraft selected = loadedUseCases.get(ucIdx);
+            state.setUseCaseDraft(selected);
+        }
+    }
+
+    private static String nvl(String s) {
+        return s != null ? s : "";
     }
 }

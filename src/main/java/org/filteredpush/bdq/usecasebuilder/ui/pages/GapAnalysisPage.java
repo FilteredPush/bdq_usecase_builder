@@ -78,6 +78,19 @@ public class GapAnalysisPage extends WizardPage {
     private DefaultListModel<String> unlinkedTestsModel;
     private JList<String> unlinkedTestsList;
 
+    // Label showing the full text of the selected requirement
+    private JLabel selectedRequirementLabel;
+
+    // Assignment-panel buttons (kept as fields so they can be enabled/disabled)
+    private JButton addExistingBtn;
+    private JButton addAllExistingBtn;
+    private JButton removeExistingBtn;
+    private JButton removeAllExistingBtn;
+    private JButton addNewBtn;
+    private JButton addAllNewBtn;
+    private JButton removeNewBtn;
+    private JButton removeAllNewBtn;
+
     private final Map<String, String> existingOptionToIri = new LinkedHashMap<>();
     private final Map<String, String> iriToExistingOption = new LinkedHashMap<>();
     private final Map<String, String> newOptionToLabel = new LinkedHashMap<>();
@@ -111,6 +124,8 @@ public class GapAnalysisPage extends WizardPage {
         refreshMappedLists(getSelectedRow());
         refreshCoverageSummary();
         refreshUnlinkedTests();
+        // Disable assignment controls until a row is selected
+        setAssignmentEnabled(getSelectedRow() != null);
     }
 
     @Override
@@ -172,8 +187,14 @@ public class GapAnalysisPage extends WizardPage {
         // Left: matrix table
         mainSplit.add(buildMatrixPanel());
 
-        // Right: assignment panes
-        mainSplit.add(buildAssignmentPanel());
+        // Right: assignment panes with requirement label at top
+        JPanel rightWrapper = new JPanel(new BorderLayout(0, 4));
+        selectedRequirementLabel = new JLabel("<html><i>Select a requirement row to manage tests.</i></html>");
+        selectedRequirementLabel.setFont(new Font(Font.SANS_SERIF, Font.ITALIC, 12));
+        selectedRequirementLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+        rightWrapper.add(selectedRequirementLabel, BorderLayout.NORTH);
+        rightWrapper.add(buildAssignmentPanel(), BorderLayout.CENTER);
+        mainSplit.add(rightWrapper);
 
         add(mainSplit, BorderLayout.CENTER);
 
@@ -263,10 +284,10 @@ public class GapAnalysisPage extends WizardPage {
         existingTestsList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         availPanel.add(new JScrollPane(existingTestsList), BorderLayout.CENTER);
         JPanel existingBtns = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 4, 2));
-        JButton addExistingBtn = new JButton("Add Existing Test →");
+        addExistingBtn = new JButton("Add Existing Test →");
         addExistingBtn.setToolTipText("Link selected existing tests to this requirement");
         addExistingBtn.addActionListener(e -> linkSelectedExistingTests());
-        JButton addAllExistingBtn = new JButton("Add All →");
+        addAllExistingBtn = new JButton("Add All →");
         addAllExistingBtn.setToolTipText("Link all visible existing tests to this requirement");
         addAllExistingBtn.addActionListener(e -> linkAllExistingTests());
         existingBtns.add(addExistingBtn);
@@ -282,10 +303,10 @@ public class GapAnalysisPage extends WizardPage {
         mappedExistingTestsList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         linkedPanel.add(new JScrollPane(mappedExistingTestsList), BorderLayout.CENTER);
         JPanel unlinkExistingBtns = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 4, 2));
-        JButton removeExistingBtn = new JButton("← Remove Link");
+        removeExistingBtn = new JButton("← Remove Link");
         removeExistingBtn.setToolTipText("Unlink selected existing tests from this requirement");
         removeExistingBtn.addActionListener(e -> unlinkMappedExistingTests());
-        JButton removeAllExistingBtn = new JButton("← Remove All");
+        removeAllExistingBtn = new JButton("← Remove All");
         removeAllExistingBtn.setToolTipText("Remove all existing test links from this requirement");
         removeAllExistingBtn.addActionListener(e -> unlinkAllExistingTests());
         unlinkExistingBtns.add(removeExistingBtn);
@@ -319,10 +340,10 @@ public class GapAnalysisPage extends WizardPage {
         newTestsList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         availPanel.add(new JScrollPane(newTestsList), BorderLayout.CENTER);
         JPanel newBtns = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 4, 2));
-        JButton addNewBtn = new JButton("Add New Draft Test →");
+        addNewBtn = new JButton("Add New Draft Test →");
         addNewBtn.setToolTipText("Link selected new draft tests to this requirement");
         addNewBtn.addActionListener(e -> linkSelectedNewTests());
-        JButton addAllNewBtn = new JButton("Add All →");
+        addAllNewBtn = new JButton("Add All →");
         addAllNewBtn.setToolTipText("Link all visible new draft tests to this requirement");
         addAllNewBtn.addActionListener(e -> linkAllNewTests());
         newBtns.add(addNewBtn);
@@ -338,10 +359,10 @@ public class GapAnalysisPage extends WizardPage {
         mappedNewTestsList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         linkedPanel.add(new JScrollPane(mappedNewTestsList), BorderLayout.CENTER);
         JPanel unlinkNewBtns = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 4, 2));
-        JButton removeNewBtn = new JButton("← Remove Link");
+        removeNewBtn = new JButton("← Remove Link");
         removeNewBtn.setToolTipText("Unlink selected new draft tests from this requirement");
         removeNewBtn.addActionListener(e -> unlinkMappedNewTests());
-        JButton removeAllNewBtn = new JButton("← Remove All");
+        removeAllNewBtn = new JButton("← Remove All");
         removeAllNewBtn.setToolTipText("Remove all new draft test links from this requirement");
         removeAllNewBtn.addActionListener(e -> unlinkAllNewTests());
         unlinkNewBtns.add(removeNewBtn);
@@ -491,8 +512,24 @@ public class GapAnalysisPage extends WizardPage {
             notesArea.setText("");
             refreshTestOptionsForRow(null);
             refreshMappedLists(null);
+            if (selectedRequirementLabel != null) {
+                selectedRequirementLabel.setText(
+                        "<html><i>Select a requirement row to manage tests.</i></html>");
+            }
+            setAssignmentEnabled(false);
             return;
         }
+        // Update the requirement label with the full text
+        if (selectedRequirementLabel != null) {
+            String reqId = row.getRequirementId() != null ? row.getRequirementId() : "";
+            String reqSummary = row.getRequirementSummary() != null ? row.getRequirementSummary() : "";
+            String fullText = reqId.isEmpty() ? reqSummary : (reqSummary.isEmpty()
+                    ? reqId : reqId + ": " + reqSummary);
+            selectedRequirementLabel.setText("<html><b>Requirement:</b> "
+                    + fullText.replace("&", "&amp;").replace("<", "&lt;")
+                    + "</html>");
+        }
+        setAssignmentEnabled(true);
         rationaleArea.setText(row.getPartialCoverageRationale() != null
                 ? row.getPartialCoverageRationale() : "");
         notesArea.setText(row.getNotes() != null ? row.getNotes() : "");
@@ -621,6 +658,29 @@ public class GapAnalysisPage extends WizardPage {
     private void saveDetails(RequirementCoverage row) {
         row.setPartialCoverageRationale(rationaleArea.getText().trim());
         row.setNotes(notesArea.getText().trim());
+    }
+
+    /**
+     * Enables or disables all assignment-panel controls (test lists, buttons, search fields).
+     * Called with {@code false} when no requirement row is selected, {@code true} when one is.
+     */
+    private void setAssignmentEnabled(boolean enabled) {
+        if (existingTestsList != null) existingTestsList.setEnabled(enabled);
+        if (newTestsList != null) newTestsList.setEnabled(enabled);
+        if (mappedExistingTestsList != null) mappedExistingTestsList.setEnabled(enabled);
+        if (mappedNewTestsList != null) mappedNewTestsList.setEnabled(enabled);
+        if (existingSearchField != null) existingSearchField.setEnabled(enabled);
+        if (newSearchField != null) newSearchField.setEnabled(enabled);
+        if (addExistingBtn != null) addExistingBtn.setEnabled(enabled);
+        if (addAllExistingBtn != null) addAllExistingBtn.setEnabled(enabled);
+        if (removeExistingBtn != null) removeExistingBtn.setEnabled(enabled);
+        if (removeAllExistingBtn != null) removeAllExistingBtn.setEnabled(enabled);
+        if (addNewBtn != null) addNewBtn.setEnabled(enabled);
+        if (addAllNewBtn != null) addAllNewBtn.setEnabled(enabled);
+        if (removeNewBtn != null) removeNewBtn.setEnabled(enabled);
+        if (removeAllNewBtn != null) removeAllNewBtn.setEnabled(enabled);
+        if (rationaleArea != null) rationaleArea.setEnabled(enabled);
+        if (notesArea != null) notesArea.setEnabled(enabled);
     }
 
     // -----------------------------------------------------------------------
