@@ -206,10 +206,11 @@ public class ExistingTestsPage extends WizardPage {
      */
     private void setAllShown(boolean checked) {
         int viewCount = sorter.getViewRowCount();
+        int[] modelRows = new int[viewCount];
         for (int viewRow = 0; viewRow < viewCount; viewRow++) {
-            int modelRow = sorter.convertRowIndexToModel(viewRow);
-            tableModel.setValueAt(checked, modelRow, 0);
+            modelRows[viewRow] = sorter.convertRowIndexToModel(viewRow);
         }
+        tableModel.setSelectedForRows(modelRows, checked);
         updateCountLabel();
     }
 
@@ -265,6 +266,19 @@ public class ExistingTestsPage extends WizardPage {
         void setSelected(Set<String> iris) {
             for (int i = 0; i < entries.size(); i++) {
                 selected[i] = iris.contains(entries.get(i).getIri());
+            }
+            fireTableDataChanged();
+        }
+
+        /**
+         * Sets the selection state for a set of model row indices in one batch,
+         * firing a single {@code fireTableDataChanged()} afterwards.
+         */
+        void setSelectedForRows(int[] modelRows, boolean checked) {
+            for (int row : modelRows) {
+                if (row >= 0 && row < selected.length) {
+                    selected[row] = checked;
+                }
             }
             fireTableDataChanged();
         }

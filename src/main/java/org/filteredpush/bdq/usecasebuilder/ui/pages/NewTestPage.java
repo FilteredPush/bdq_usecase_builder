@@ -1015,18 +1015,22 @@ public class NewTestPage extends WizardPage {
         }
     }
 
+    /** Returns true when a draft is currently selected in the list. */
+    private boolean isDraftSelected() {
+        return draftList != null && draftList.getSelectedValue() != null;
+    }
+
     /** Updates the Save button enabled state based on whether a label has been entered. */
     private void updateSaveButtonState() {
         if (saveDraftButton != null) {
             boolean hasLabel = labelField != null && !labelField.getText().trim().isEmpty();
-            boolean draftSelected = draftList != null && draftList.getSelectedValue() != null;
-            saveDraftButton.setEnabled(hasLabel && draftSelected);
+            saveDraftButton.setEnabled(hasLabel && isDraftSelected());
         }
     }
 
     /** Marks the form as having unsaved changes and updates the indicator. */
     private void markDirty() {
-        if (!updatingForm && draftList != null && draftList.getSelectedValue() != null) {
+        if (!updatingForm && isDraftSelected()) {
             dirtyFlag = true;
             if (unsavedLabel != null) {
                 unsavedLabel.setText("⚠ Unsaved changes");
@@ -1051,12 +1055,11 @@ public class NewTestPage extends WizardPage {
         if (suggestLabelsButton == null) {
             return;
         }
-        boolean draftSelected = draftList != null && draftList.getSelectedValue() != null;
         boolean hasType = typeCombo != null && typeCombo.getSelectedItem() != null;
         boolean hasResourceType = resourceTypeCombo != null && resourceTypeCombo.getSelectedItem() != null;
         boolean hasIe = (actedUponListModel != null && !actedUponListModel.isEmpty())
                 || (consultedListModel != null && !consultedListModel.isEmpty());
-        suggestLabelsButton.setEnabled(draftSelected && hasType && hasResourceType && hasIe);
+        suggestLabelsButton.setEnabled(isDraftSelected() && hasType && hasResourceType && hasIe);
     }
 
     // -----------------------------------------------------------------------
