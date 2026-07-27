@@ -3,6 +3,7 @@ package org.filteredpush.bdq.usecasebuilder.service;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.util.List;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -12,6 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Unit tests for {@link VocabularyService}.
  */
 public class VocabularyServiceTest {
+
+    private static final String CONCRETE_USE_CASE_TERM = "Occurrence data are fit for species distribution modeling";
 
     @Test
     public void testLoadBuiltInVocabularies() {
@@ -23,6 +26,17 @@ public class VocabularyServiceTest {
         assertFalse(service.getBdqEnhancements().isEmpty(), "bdqenh should load");
         assertFalse(service.getBdqValidationTerms().isEmpty(), "bdqval should load");
         assertFalse(service.getBdqUseCaseTerms().isEmpty(), "bdquc should load");
+    }
+
+    @Test
+    public void testUseCaseReferenceFilteringKeepsConcreteTerms() {
+        List<String> filtered = VocabularyService.filterBdqUseCaseReferenceTerms(List.of(
+                "UseCase",
+                "DataQualityNeed",
+                CONCRETE_USE_CASE_TERM));
+        assertTrue(filtered.contains(CONCRETE_USE_CASE_TERM));
+        assertFalse(filtered.contains("UseCase"));
+        assertFalse(filtered.contains("DataQualityNeed"));
     }
 
     @Test

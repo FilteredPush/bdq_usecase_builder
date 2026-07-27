@@ -377,7 +377,12 @@ public class NewTestPage extends WizardPage {
         dimensionCombo.setSelectedItem(nvl(draft.getDimension()));
         refreshCriterionPicklistByType();
         criterionCombo.setSelectedItem(nvl(draft.getCriterionOrEnhancement()));
-        useCaseRefCombo.setSelectedItem(nvl(draft.getUseCaseReference()));
+        String configuredUseCaseRef = nvl(draft.getUseCaseReference());
+        if (configuredUseCaseRef.isEmpty()) {
+            useCaseRefCombo.setSelectedItem(getDefaultUseCaseReference());
+        } else {
+            useCaseRefCombo.setSelectedItem(configuredUseCaseRef);
+        }
         loadExpectedResponseClauses(draft);
         refreshResponseResultsByType();
         expectedResponseArea.setText(clauseService.toCanonicalText(
@@ -419,7 +424,7 @@ public class NewTestPage extends WizardPage {
         dimensionCombo.setSelectedItem("");
         refreshCriterionPicklistByType();
         criterionCombo.setSelectedItem("");
-        useCaseRefCombo.setSelectedItem("");
+        useCaseRefCombo.setSelectedItem(getDefaultUseCaseReference());
         responseConditionField.setText("");
         responseCommentField.setText("");
         responseClauseListModel.clear();
@@ -438,13 +443,13 @@ public class NewTestPage extends WizardPage {
         }
         resetComboItems(informationElementCombo, infoTerms);
         resetComboItems(dimensionCombo, vocabularyService.getBdqDimensions());
-        List<String> useCaseRefs = new ArrayList<>();
-        if (state.getUseCaseDraft() != null && state.getUseCaseDraft().getName() != null
-                && !state.getUseCaseDraft().getName().trim().isEmpty()) {
-            useCaseRefs.add(state.getUseCaseDraft().getName().trim());
+        LinkedHashSet<String> useCaseRefSet = new LinkedHashSet<>();
+        String defaultUseCaseRef = getDefaultUseCaseReference();
+        if (!defaultUseCaseRef.isEmpty()) {
+            useCaseRefSet.add(defaultUseCaseRef);
         }
-        useCaseRefs.addAll(vocabularyService.getBdqUseCaseTerms());
-        resetComboItems(useCaseRefCombo, useCaseRefs);
+        useCaseRefSet.addAll(vocabularyService.getBdqUseCaseReferenceTerms());
+        resetComboItems(useCaseRefCombo, new ArrayList<>(useCaseRefSet));
         refreshResponseResultsByType();
         refreshCriterionPicklistByType();
     }
@@ -499,6 +504,13 @@ public class NewTestPage extends WizardPage {
     private String getSelectedComboText(JComboBox<String> combo) {
         Object value = combo.isEditable() ? combo.getEditor().getItem() : combo.getSelectedItem();
         return value != null ? value.toString().trim() : "";
+    }
+
+    private String getDefaultUseCaseReference() {
+        if (state.getUseCaseDraft() == null || state.getUseCaseDraft().getName() == null) {
+            return "";
+        }
+        return state.getUseCaseDraft().getName().trim();
     }
 
     private void addExpectedResponseClause(boolean elseClause) {

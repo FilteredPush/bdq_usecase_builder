@@ -75,6 +75,13 @@ public class VocabularyService {
         return getVocabulary("bdquc");
     }
 
+    /**
+     * Returns bdquc terms that represent concrete use cases rather than ontology classes.
+     */
+    public List<String> getBdqUseCaseReferenceTerms() {
+        return filterBdqUseCaseReferenceTerms(getBdqUseCaseTerms());
+    }
+
     /** Returns information-element terms from dwc, ac, and custom vocabularies. */
     public List<String> getInformationElementTerms() {
         Set<String> merged = new LinkedHashSet<>();
@@ -205,5 +212,37 @@ public class VocabularyService {
         }
         fields.add(current.toString());
         return fields;
+    }
+
+    static List<String> filterBdqUseCaseReferenceTerms(List<String> terms) {
+        List<String> filtered = new ArrayList<>();
+        for (String term : terms) {
+            if (term == null || term.trim().isEmpty()) {
+                continue;
+            }
+            if (!isBdqUseCaseClassTerm(term)) {
+                filtered.add(term.trim());
+            }
+        }
+        return List.copyOf(filtered);
+    }
+
+    private static boolean isBdqUseCaseClassTerm(String term) {
+        return isKnownClassName(extractLocalName(term.trim()));
+    }
+
+    private static String extractLocalName(String term) {
+        int slash = term.lastIndexOf('/');
+        int hash = term.lastIndexOf('#');
+        int colon = term.lastIndexOf(':');
+        int cut = Math.max(Math.max(slash, hash), colon);
+        return cut >= 0 && cut + 1 < term.length() ? term.substring(cut + 1) : term;
+    }
+
+    private static boolean isKnownClassName(String localName) {
+        return "UseCase".equals(localName)
+                || "DataQualityNeed".equals(localName)
+                || "DataQualityAssessmentPolicy".equals(localName)
+                || "Specification".equals(localName);
     }
 }
