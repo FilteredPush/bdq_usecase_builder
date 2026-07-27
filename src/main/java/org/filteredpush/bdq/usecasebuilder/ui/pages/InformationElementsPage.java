@@ -54,6 +54,7 @@ public class InformationElementsPage extends WizardPage {
     private IETableModel tableModel;
     private JTable table;
     private JComboBox<String> termCombo;
+    private JButton addButton;
     private final ValidationService validationService = new ValidationService();
     private final VocabularyService vocabularyService;
     /** Full sorted list of terms, used for autocomplete filtering. */
@@ -152,7 +153,8 @@ public class InformationElementsPage extends WizardPage {
         buttons.add(new JLabel("Term:"), buildLabelConstraint());
         buttons.add(termCombo, gc);
 
-        JButton addButton = new JButton("Add");
+        addButton = new JButton("Add");
+        addButton.setEnabled(false); // disabled until a term is entered
         addButton.addActionListener(e -> addSelectedTerm());
         gc.weightx = 0;
         gc.gridx = 2;
@@ -187,10 +189,19 @@ public class InformationElementsPage extends WizardPage {
     private void wireAutocomplete() {
         JTextField editor = (JTextField) termCombo.getEditor().getEditorComponent();
         editor.getDocument().addDocumentListener(new DocumentListener() {
-            @Override public void insertUpdate(DocumentEvent e) { filterCombo(); }
-            @Override public void removeUpdate(DocumentEvent e) { filterCombo(); }
-            @Override public void changedUpdate(DocumentEvent e) { filterCombo(); }
+            @Override public void insertUpdate(DocumentEvent e) { filterCombo(); updateAddButtonState(); }
+            @Override public void removeUpdate(DocumentEvent e) { filterCombo(); updateAddButtonState(); }
+            @Override public void changedUpdate(DocumentEvent e) { filterCombo(); updateAddButtonState(); }
         });
+    }
+
+    /** Enables the Add button only when the term combo editor has a non-empty value. */
+    private void updateAddButtonState() {
+        if (addButton == null || termCombo == null) {
+            return;
+        }
+        Object item = termCombo.getEditor().getItem();
+        addButton.setEnabled(item != null && !item.toString().trim().isEmpty());
     }
 
     private void filterCombo() {
@@ -322,7 +333,7 @@ public class InformationElementsPage extends WizardPage {
                     }
                 }
             }
-            dialog.dispose();
+            // Dialog stays open – user closes it explicitly
         });
         JButton closeButton = new JButton("Close");
         closeButton.addActionListener(e -> dialog.dispose());

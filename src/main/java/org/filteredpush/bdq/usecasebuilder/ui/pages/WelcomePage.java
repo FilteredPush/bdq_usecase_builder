@@ -152,16 +152,6 @@ public class WelcomePage extends WizardPage {
         loadProjectButton.addActionListener(e -> loadProject(projectFileField));
         addFieldRow(form, "Load project:", projectFileField, loadProjectButton, row++);
 
-        // Row: Save project button (right-aligned in second column)
-        GridBagConstraints saveBtnC = new GridBagConstraints();
-        saveBtnC.gridx = 1; saveBtnC.gridy = row++;
-        saveBtnC.anchor = GridBagConstraints.WEST;
-        saveBtnC.insets = new Insets(0, 0, 6, 6);
-        JButton saveProjectButton = new JButton("Save current project…");
-        saveProjectButton.setToolTipText("Save the current project state to a file");
-        saveProjectButton.addActionListener(e -> saveProject());
-        form.add(saveProjectButton, saveBtnC);
-
         // Row: Additional IE vocabulary URI
         vocabUriField = new JTextField(30);
         vocabUriField.setToolTipText(

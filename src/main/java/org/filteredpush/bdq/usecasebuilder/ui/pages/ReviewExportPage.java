@@ -6,6 +6,7 @@ import org.filteredpush.bdq.usecasebuilder.model.ProjectState;
 import org.filteredpush.bdq.usecasebuilder.model.RequirementCoverage;
 import org.filteredpush.bdq.usecasebuilder.model.TestDraft;
 import org.filteredpush.bdq.usecasebuilder.service.ExportService;
+import org.filteredpush.bdq.usecasebuilder.service.ProjectStateSerializer;
 import org.filteredpush.bdq.usecasebuilder.service.ShaclValidationService;
 import org.filteredpush.bdq.usecasebuilder.service.TurtleExportService;
 import org.filteredpush.bdq.usecasebuilder.service.ValidationService;
@@ -21,6 +22,7 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.FlowLayout;
@@ -28,6 +30,7 @@ import java.awt.Font;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 
 /**
@@ -60,6 +63,7 @@ public class ReviewExportPage extends WizardPage {
     private final ValidationService validationService = new ValidationService();
     private final ShaclValidationService shaclService = new ShaclValidationService();
     private final TurtleExportService turtleExportService = new TurtleExportService();
+    private final ProjectStateSerializer projectSerializer = new ProjectStateSerializer();
     private ShaclValidationService.ValidationReport lastShaclReport = null;
 
     public ReviewExportPage(ProjectState state) {
@@ -195,9 +199,14 @@ public class ReviewExportPage extends WizardPage {
         exportBtn.setToolTipText("Export RDF/Turtle to the configured output directory");
         exportNowLegacyBtn.setToolTipText("Export Markdown summary + JSON + conformance CSVs");
 
+        JButton saveProjectBtn = new JButton("Save current project…");
+        saveProjectBtn.setToolTipText("Save the current project state to a properties file for later re-use");
+        saveProjectBtn.addActionListener(e -> saveProject());
+
         btnPanel.add(validateBtn);
         btnPanel.add(exportBtn);
         btnPanel.add(exportNowLegacyBtn);
+        btnPanel.add(saveProjectBtn);
         south.add(btnPanel);
 
         return south;
@@ -298,6 +307,33 @@ public class ReviewExportPage extends WizardPage {
             JOptionPane.showMessageDialog(this,
                     "Turtle export failed: " + ex.getMessage(),
                     "Export error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void saveProject() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        chooser.setFileFilter(new FileNameExtensionFilter(
+                "BDQ project files (*.properties)", "properties"));
+        chooser.setSelectedFile(new File("bdq_project.properties"));
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        File file = chooser.getSelectedFile();
+        if (!file.getName().endsWith(".properties")) {
+            file = new File(file.getAbsolutePath() + ".properties");
+        }
+        try {
+            projectSerializer.save(state, file);
+            JOptionPane.showMessageDialog(this,
+                    "Project saved to:\n" + file.getAbsolutePath(),
+                    "Project saved",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Could not save project file:\n" + ex.getMessage(),
+                    "Save error",
                     JOptionPane.ERROR_MESSAGE);
         }
     }

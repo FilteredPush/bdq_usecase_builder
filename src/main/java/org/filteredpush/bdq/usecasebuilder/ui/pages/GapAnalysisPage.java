@@ -649,7 +649,17 @@ public class GapAnalysisPage extends WizardPage {
 
     private void afterLinkChange(RequirementCoverage row) {
         saveDetails(row);
+        // Preserve selection across fireTableDataChanged()
+        int selectedViewRow = matrixTable.getSelectedRow();
+        int selectedModelRow = (selectedViewRow >= 0)
+                ? matrixTable.convertRowIndexToModel(selectedViewRow) : -1;
         tableModel.fireTableDataChanged();
+        if (selectedModelRow >= 0) {
+            int viewRow = matrixTable.convertRowIndexToView(selectedModelRow);
+            if (viewRow >= 0) {
+                matrixTable.setRowSelectionInterval(viewRow, viewRow);
+            }
+        }
         refreshMappedLists(row);
         refreshCoverageSummary();
         refreshUnlinkedTests();

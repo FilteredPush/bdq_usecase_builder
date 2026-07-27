@@ -281,8 +281,8 @@ public class TurtleExportService {
     }
 
     private Resource buildIeResource(Model model, String qname, InfoElementRole role) {
-        // Construct a simple URI for the information element node
-        String ieIri = DEFAULT_BASE + "ie_"
+        // Construct a stable URN-UUID for the information element node
+        String ieIri = DEFAULT_BASE
                 + UUID.nameUUIDFromBytes(("ie:" + qname).getBytes(StandardCharsets.UTF_8));
         Resource ieRes = model.createResource(ieIri);
         ieRes.addProperty(RDF.type,
@@ -308,7 +308,7 @@ public class TurtleExportService {
             return;
         }
 
-        String specIri = DEFAULT_BASE + "spec_"
+        String specIri = DEFAULT_BASE
                 + UUID.nameUUIDFromBytes(("spec:" + specText).getBytes(StandardCharsets.UTF_8));
         Resource specRes = model.createResource(specIri);
         specRes.addProperty(RDF.type,

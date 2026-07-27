@@ -112,6 +112,8 @@ public class NewTestPage extends WizardPage {
     private JButton moveUpButton;
     private JButton moveDownButton;
     private JButton saveDraftButton;
+    private JLabel unsavedLabel;
+    private boolean dirtyFlag = false;
     private DefaultListModel<String> coverageListModel;
     private JList<String> coverageList;
     private JPanel testDetailsPanel;
@@ -238,12 +240,28 @@ public class NewTestPage extends WizardPage {
         listButtons.add(deleteDraftButton);
         leftPanel.add(listButtons, BorderLayout.SOUTH);
 
-        // Right panel: form
+        // Right panel: form in scroll + sticky save footer
         JScrollPane formScroll = new JScrollPane(buildForm());
+
+        unsavedLabel = new JLabel(" ");
+        unsavedLabel.setForeground(new java.awt.Color(0xE65100));
+        unsavedLabel.setFont(unsavedLabel.getFont().deriveFont(java.awt.Font.ITALIC));
+        JPanel saveFooter = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+        saveDraftButton = new JButton("Save draft");
+        saveDraftButton.setEnabled(false);
+        saveDraftButton.addActionListener(e -> saveCurrentDraft());
+        saveFooter.add(saveDraftButton);
+        saveFooter.add(unsavedLabel);
+        saveFooter.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0,
+                java.awt.Color.LIGHT_GRAY));
+
+        JPanel rightPanel = new JPanel(new BorderLayout(0, 4));
+        rightPanel.add(formScroll, BorderLayout.CENTER);
+        rightPanel.add(saveFooter, BorderLayout.SOUTH);
 
         JPanel content = new JPanel(new BorderLayout(8, 0));
         content.add(leftPanel, BorderLayout.WEST);
-        content.add(formScroll, BorderLayout.CENTER);
+        content.add(rightPanel, BorderLayout.CENTER);
         add(content, BorderLayout.CENTER);
     }
 
@@ -437,16 +455,7 @@ public class NewTestPage extends WizardPage {
         fc = fieldConstraints(row++);
         testDetailsPanel.add(checkboxPanel, fc);
 
-        // Row 14: Save button
-        saveDraftButton = new JButton("Save draft");
-        saveDraftButton.setEnabled(false); // disabled until a label is entered
-        saveDraftButton.addActionListener(e -> saveCurrentDraft());
-        GridBagConstraints bc = new GridBagConstraints();
-        bc.gridy = row;
-        bc.gridx = 1;
-        bc.anchor = GridBagConstraints.WEST;
-        bc.insets = new Insets(8, 0, 0, 0);
-        testDetailsPanel.add(saveDraftButton, bc);
+        // Row 14: (Save button is in the sticky footer below the form scroll)
 
         // ---- Wire up listeners ----
 
@@ -455,6 +464,7 @@ public class NewTestPage extends WizardPage {
             refreshCriterionPicklistByType();
             applySuggestions();
             updateSuggestButtonState();
+            markDirty();
         });
 
         // IE add combo: trigger suggestions on every keystroke in the editor
@@ -465,16 +475,22 @@ public class NewTestPage extends WizardPage {
         // Also on action (Enter / selection)
         ieAddCombo.addActionListener(e -> applySuggestions());
 
-        // Dimension / criterion combos: trigger suggestions
-        dimensionCombo.addActionListener(e -> applySuggestions());
-        criterionCombo.addActionListener(e -> applySuggestions());
+        // Dimension / criterion combos: trigger suggestions + dirty tracking
+        dimensionCombo.addActionListener(e -> { applySuggestions(); markDirty(); });
+        criterionCombo.addActionListener(e -> { applySuggestions(); markDirty(); });
+        useCaseRefCombo.addActionListener(e -> markDirty());
 
         // Track manual label edits to suppress further auto-suggestions
         labelField.getDocument().addDocumentListener(makeDocumentListener(this::onLabelManualEdit));
         prefLabelField.getDocument().addDocumentListener(makeDocumentListener(this::onPrefLabelManualEdit));
 
-        // Track label changes to enable/disable save button
+        // Track label changes to enable/disable save button + dirty tracking
         labelField.getDocument().addDocumentListener(makeDocumentListener(this::updateSaveButtonState));
+        labelField.getDocument().addDocumentListener(makeDocumentListener(this::markDirty));
+        prefLabelField.getDocument().addDocumentListener(makeDocumentListener(this::markDirty));
+        notesArea.getDocument().addDocumentListener(makeDocumentListener(this::markDirty));
+        hasSourceAuthorityCheck.addActionListener(e -> markDirty());
+        hasParametersCheck.addActionListener(e -> markDirty());
 
         return testDetailsPanel;
     }
@@ -687,6 +703,7 @@ public class NewTestPage extends WizardPage {
         updateIeInsertCombo();
         updateSaveButtonState();
         updateSuggestButtonState();
+        clearDirty();
     }
 
     private void saveCurrentDraft() {
@@ -719,6 +736,7 @@ public class NewTestPage extends WizardPage {
         int idx = draftList.getSelectedIndex();
         listModel.set(idx, draft);
         refreshCoverageList();
+        clearDirty();
     }
 
     private void clearForm() {
@@ -747,6 +765,7 @@ public class NewTestPage extends WizardPage {
         updateIeInsertCombo();
         updateSaveButtonState();
         updateSuggestButtonState();
+        clearDirty();
     }
 
     private void refreshPicklists() {
@@ -861,6 +880,7 @@ public class NewTestPage extends WizardPage {
         applySuggestions();
         updateIeInsertCombo();
         updateSuggestButtonState();
+        markDirty();
     }
 
     /** Removes the selected items from the given list. */
@@ -873,6 +893,7 @@ public class NewTestPage extends WizardPage {
         applySuggestions();
         updateIeInsertCombo();
         updateSuggestButtonState();
+        markDirty();
     }
 
     private boolean containsItem(DefaultListModel<String> model, String item) {
@@ -1000,6 +1021,24 @@ public class NewTestPage extends WizardPage {
             boolean hasLabel = labelField != null && !labelField.getText().trim().isEmpty();
             boolean draftSelected = draftList != null && draftList.getSelectedValue() != null;
             saveDraftButton.setEnabled(hasLabel && draftSelected);
+        }
+    }
+
+    /** Marks the form as having unsaved changes and updates the indicator. */
+    private void markDirty() {
+        if (!updatingForm && draftList != null && draftList.getSelectedValue() != null) {
+            dirtyFlag = true;
+            if (unsavedLabel != null) {
+                unsavedLabel.setText("⚠ Unsaved changes");
+            }
+        }
+    }
+
+    /** Clears the dirty flag and hides the unsaved-changes indicator. */
+    private void clearDirty() {
+        dirtyFlag = false;
+        if (unsavedLabel != null) {
+            unsavedLabel.setText(" ");
         }
     }
 
@@ -1148,6 +1187,7 @@ public class NewTestPage extends WizardPage {
         responseCommentField.setText("");
         expectedResponseArea.setText(clauseService.toCanonicalText(toClauseList(responseClauseListModel)));
         autoDetectSourceAuthorityAndParameters();
+        markDirty();
     }
 
     /** Quick-adds the default "otherwise" else clause appropriate for the selected test type. */
@@ -1167,6 +1207,7 @@ public class NewTestPage extends WizardPage {
         responseClauseListModel.addElement(clause);
         expectedResponseArea.setText(clauseService.toCanonicalText(toClauseList(responseClauseListModel)));
         autoDetectSourceAuthorityAndParameters();
+        markDirty();
     }
 
     private ExpectedResponseClause buildClause(boolean elseClause, String condition,
