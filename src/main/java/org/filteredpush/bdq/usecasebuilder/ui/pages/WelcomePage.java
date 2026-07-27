@@ -290,6 +290,8 @@ public class WelcomePage extends WizardPage {
             for (TestDraft draft : loaded.getNewTestDrafts()) {
                 state.addNewTestDraft(draft);
             }
+            state.setSelectedExistingTestIris(loaded.getSelectedExistingTestIris());
+            state.setRequirementCoverageRows(loaded.getRequirementCoverageRows());
             if (loaded.getAdditionalVocabUri() != null) {
                 state.setAdditionalVocabUri(loaded.getAdditionalVocabUri());
             }
@@ -302,7 +304,9 @@ public class WelcomePage extends WizardPage {
             String msg = "Project loaded successfully from:\n" + file.getAbsolutePath()
                     + "\n\nLoaded: " + loaded.getInformationElements().size()
                     + " information element(s), "
-                    + loaded.getNewTestDrafts().size() + " draft test(s).";
+                    + loaded.getNewTestDrafts().size() + " draft test(s), "
+                    + loaded.getSelectedExistingTestIris().size() + " selected test(s), "
+                    + loaded.getRequirementCoverageRows().size() + " coverage row(s).";
             JOptionPane.showMessageDialog(this, msg, "Project loaded",
                     JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception ex) {

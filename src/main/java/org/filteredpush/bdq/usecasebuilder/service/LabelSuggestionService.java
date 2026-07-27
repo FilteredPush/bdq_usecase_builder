@@ -25,8 +25,12 @@ public class LabelSuggestionService {
      * Generates a suggested machine label for the given draft, following the
      * {@code TESTTYPE_INFORMATIONELEMENT_CRITERION} convention.
      *
-     * <p>Returns {@code null} if insufficient information is available to
-     * construct a meaningful suggestion.</p>
+     * <p>When only type and information element are available (no criterion or dimension),
+     * a partial label {@code TESTTYPE_INFORMATIONELEMENT} is returned so the user sees
+     * an immediate suggestion as soon as the first IE is added.</p>
+     *
+     * <p>Returns {@code null} if insufficient information (type or IE missing) is available
+     * to construct any suggestion.</p>
      *
      * @param draft the test draft to generate a suggestion for
      * @return suggested label string, or {@code null}
@@ -37,10 +41,14 @@ public class LabelSuggestionService {
         }
         String typeToken = testTypeToken(draft.getType());
         String ieToken = firstIeToken(draft);
-        String criterionToken = criterionToken(draft);
 
-        if (typeToken == null || ieToken == null || criterionToken == null) {
+        if (typeToken == null || ieToken == null) {
             return null;
+        }
+        String criterionToken = criterionToken(draft);
+        if (criterionToken == null) {
+            // Return partial label without criterion
+            return typeToken + "_" + ieToken;
         }
         return typeToken + "_" + ieToken + "_" + criterionToken;
     }
@@ -49,8 +57,10 @@ public class LabelSuggestionService {
      * Generates a suggested human-readable preferred label (skos:prefLabel)
      * for the given draft.
      *
-     * <p>The pattern is: "{TypeName} {Information Element} {criterion}"
-     * in title case, e.g. "Validation scientificName notEmpty".</p>
+     * <p>The full pattern is: "{TypeName} {Information Element} {criterion}"
+     * in title case, e.g. "Validation scientificName notEmpty". When criterion
+     * is not yet set a partial suggestion "{TypeName} {Information Element}" is
+     * returned so the user sees an immediate hint as soon as an IE is added.</p>
      *
      * @param draft the test draft to generate a suggestion for
      * @return suggested prefLabel string, or {@code null}
@@ -61,16 +71,16 @@ public class LabelSuggestionService {
         }
         String typeName = draft.getType() != null ? draft.getType().getDisplayName() : null;
         String ie = firstIeShortName(draft);
-        String criterion = draft.getCriterionOrEnhancement();
 
-        if (typeName == null || ie == null || criterion == null) {
+        if (typeName == null || ie == null) {
             return null;
         }
-        String criterionClean = criterion.trim();
-        if (criterionClean.isEmpty()) {
-            return null;
+        String criterion = draft.getCriterionOrEnhancement();
+        if (criterion == null || criterion.trim().isEmpty()) {
+            // Return partial prefLabel without criterion
+            return typeName + " " + ie;
         }
-        return typeName + " " + ie + " " + criterionClean;
+        return typeName + " " + ie + " " + criterion.trim();
     }
 
     /**

@@ -117,7 +117,7 @@ public class NewTestPage extends WizardPage {
     private JCheckBox hasParametersCheck;
 
     private JButton addIfButton;
-    private JButton addElseButton;
+    private JButton addOtherwiseButton;
     private JButton removeClauseButton;
     private JButton moveUpButton;
     private JButton moveDownButton;
@@ -421,10 +421,7 @@ public class NewTestPage extends WizardPage {
 
         // Row 10: Clause control buttons
         JPanel clauseButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
-        addElseButton = new JButton("Add ELSE");
-        addElseButton.setToolTipText("Add an ELSE (fallback) clause");
-        addElseButton.addActionListener(e -> addExpectedResponseClause(true));
-        JButton addOtherwiseButton = new JButton("Add otherwise →");
+        addOtherwiseButton = new JButton("Add otherwise →");
         addOtherwiseButton.setToolTipText("Quick-add the type-appropriate else clause (e.g. otherwise NOT_COMPLIANT)");
         addOtherwiseButton.addActionListener(e -> addOtherwiseClause());
         removeClauseButton = new JButton("Remove");
@@ -433,7 +430,6 @@ public class NewTestPage extends WizardPage {
         moveUpButton.addActionListener(e -> moveSelectedClause(-1));
         moveDownButton = new JButton("↓");
         moveDownButton.addActionListener(e -> moveSelectedClause(1));
-        clauseButtons.add(addElseButton);
         clauseButtons.add(addOtherwiseButton);
         clauseButtons.add(removeClauseButton);
         clauseButtons.add(moveUpButton);
@@ -717,6 +713,10 @@ public class NewTestPage extends WizardPage {
         updateIeInsertCombo();
         updateSaveButtonState();
         updateSuggestButtonState();
+        // If label is blank (e.g. new draft), trigger auto-suggestion now that updatingForm=false
+        if (labelField.getText().trim().isEmpty()) {
+            applySuggestions();
+        }
         clearDirty();
     }
 
@@ -1465,6 +1465,7 @@ public class NewTestPage extends WizardPage {
         actedUponRadio.setEnabled(enabled);
         consultedRadio.setEnabled(enabled);
         addIeButton.setEnabled(enabled);
+        browseIeButton.setEnabled(enabled);
         actedUponList.setEnabled(enabled);
         consultedList.setEnabled(enabled);
         removeActedUponButton.setEnabled(enabled);
@@ -1484,7 +1485,7 @@ public class NewTestPage extends WizardPage {
         hasSourceAuthorityCheck.setEnabled(enabled);
         hasParametersCheck.setEnabled(enabled);
         addIfButton.setEnabled(enabled);
-        addElseButton.setEnabled(enabled);
+        addOtherwiseButton.setEnabled(enabled);
         removeClauseButton.setEnabled(enabled);
         moveUpButton.setEnabled(enabled);
         moveDownButton.setEnabled(enabled);

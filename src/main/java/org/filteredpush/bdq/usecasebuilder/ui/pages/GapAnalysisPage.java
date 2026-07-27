@@ -117,9 +117,16 @@ public class GapAnalysisPage extends WizardPage {
     @Override
     public void onEnter() {
         markVisited();
-        List<RequirementCoverage> rows = gapAnalysisService.buildRows(state);
+        // If state already has coverage rows from a loaded project, use them.
+        // Otherwise build fresh rows from the use-case requirements text.
+        List<RequirementCoverage> rows;
+        if (!state.getRequirementCoverageRows().isEmpty()) {
+            rows = new ArrayList<>(state.getRequirementCoverageRows());
+        } else {
+            rows = gapAnalysisService.buildRows(state);
+            state.setRequirementCoverageRows(rows);
+        }
         tableModel.load(rows);
-        state.setRequirementCoverageRows(rows);
         refreshTestOptionsForRow(getSelectedRow());
         refreshMappedLists(getSelectedRow());
         refreshCoverageSummary();
