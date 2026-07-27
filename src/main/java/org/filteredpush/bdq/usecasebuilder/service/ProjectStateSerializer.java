@@ -266,13 +266,7 @@ public class ProjectStateSerializer {
 
         // Load information elements (new format: ie.N.qname / ie.N.role)
         // Also supports legacy format: ie.N (qname only, role defaults to ACTED_UPON)
-        String countStr = props.getProperty(KEY_IE_COUNT, "0");
-        int count = 0;
-        try {
-            count = Integer.parseInt(countStr.trim());
-        } catch (NumberFormatException e) {
-            logger.warn("Invalid ie.count value '{}'; assuming 0", countStr);
-        }
+        int count = parseIntSafely(props.getProperty(KEY_IE_COUNT, "0"), 0);
         for (int i = 0; i < count; i++) {
             // Try new format first, fall back to legacy
             String qname = props.getProperty(KEY_IE_PREFIX + i + ".qname");
@@ -294,13 +288,7 @@ public class ProjectStateSerializer {
         }
 
         // Load draft tests
-        String draftCountStr = props.getProperty(KEY_DRAFT_COUNT, "0");
-        int draftCount = 0;
-        try {
-            draftCount = Integer.parseInt(draftCountStr.trim());
-        } catch (NumberFormatException e) {
-            logger.warn("Invalid draft.count value '{}'; assuming 0", draftCountStr);
-        }
+        int draftCount = parseIntSafely(props.getProperty(KEY_DRAFT_COUNT, "0"), 0);
         for (int i = 0; i < draftCount; i++) {
             String pfx = KEY_DRAFT_PREFIX + i + ".";
             TestDraft draft = new TestDraft();
@@ -346,25 +334,15 @@ public class ProjectStateSerializer {
             draft.setHasParameters(Boolean.parseBoolean(
                     props.getProperty(pfx + "hasParameters", "false")));
             // Load conformance rows
-            String confColCountStr = props.getProperty(pfx + "conf.col.count", "0");
-            int confColCount = 0;
-            try {
-                confColCount = Integer.parseInt(confColCountStr.trim());
-            } catch (NumberFormatException ex) {
-                logger.warn("Invalid conf.col.count for draft {}; skipping conformance rows", i);
-            }
+            int confColCount = parseIntSafely(
+                    props.getProperty(pfx + "conf.col.count", "0"), 0);
             if (confColCount > 0) {
                 List<String> cols = new ArrayList<>();
                 for (int c = 0; c < confColCount; c++) {
                     cols.add(props.getProperty(pfx + "conf.col." + c, "Col" + c));
                 }
-                String confRowCountStr = props.getProperty(pfx + "conf.row.count", "0");
-                int confRowCount = 0;
-                try {
-                    confRowCount = Integer.parseInt(confRowCountStr.trim());
-                } catch (NumberFormatException ex) {
-                    logger.warn("Invalid conf.row.count for draft {}; skipping conformance rows", i);
-                }
+                int confRowCount = parseIntSafely(
+                        props.getProperty(pfx + "conf.row.count", "0"), 0);
                 List<ConformanceRow> confRows = new ArrayList<>();
                 for (int r = 0; r < confRowCount; r++) {
                     ConformanceRow confRow = new ConformanceRow();
@@ -380,13 +358,7 @@ public class ProjectStateSerializer {
         }
 
         // Load selected existing test IRIs
-        String selCountStr = props.getProperty(KEY_SEL_COUNT, "0");
-        int selCount = 0;
-        try {
-            selCount = Integer.parseInt(selCountStr.trim());
-        } catch (NumberFormatException e) {
-            logger.warn("Invalid sel.count value '{}'; assuming 0", selCountStr);
-        }
+        int selCount = parseIntSafely(props.getProperty(KEY_SEL_COUNT, "0"), 0);
         for (int i = 0; i < selCount; i++) {
             String iri = props.getProperty(KEY_SEL_PREFIX + i, "");
             if (!iri.trim().isEmpty()) {
@@ -395,13 +367,7 @@ public class ProjectStateSerializer {
         }
 
         // Load requirement coverage rows (gap analysis)
-        String coverageCountStr = props.getProperty(KEY_COVERAGE_COUNT, "0");
-        int coverageCount = 0;
-        try {
-            coverageCount = Integer.parseInt(coverageCountStr.trim());
-        } catch (NumberFormatException e) {
-            logger.warn("Invalid coverage.count value '{}'; assuming 0", coverageCountStr);
-        }
+        int coverageCount = parseIntSafely(props.getProperty(KEY_COVERAGE_COUNT, "0"), 0);
         List<RequirementCoverage> loadedCoverageRows = new ArrayList<>();
         for (int i = 0; i < coverageCount; i++) {
             String pfx = KEY_COVERAGE_PREFIX + i + ".";
@@ -412,9 +378,8 @@ public class ProjectStateSerializer {
             rc.setPartialCoverageRationale(emptyToNull(props.getProperty(pfx + "rationale", "")));
             rc.setNotes(emptyToNull(props.getProperty(pfx + "notes", "")));
             // Linked existing tests
-            String linkedExCountStr = props.getProperty(pfx + "linkedExistingCount", "0");
-            int linkedExCount = 0;
-            try { linkedExCount = Integer.parseInt(linkedExCountStr.trim()); } catch (NumberFormatException ex) { /* skip */ }
+            int linkedExCount = parseIntSafely(
+                    props.getProperty(pfx + "linkedExistingCount", "0"), 0);
             for (int j = 0; j < linkedExCount; j++) {
                 String iri = props.getProperty(pfx + "linkedExisting." + j, "");
                 if (!iri.trim().isEmpty()) {
@@ -422,9 +387,8 @@ public class ProjectStateSerializer {
                 }
             }
             // Linked new tests
-            String linkedNewCountStr = props.getProperty(pfx + "linkedNewCount", "0");
-            int linkedNewCount = 0;
-            try { linkedNewCount = Integer.parseInt(linkedNewCountStr.trim()); } catch (NumberFormatException ex) { /* skip */ }
+            int linkedNewCount = parseIntSafely(
+                    props.getProperty(pfx + "linkedNewCount", "0"), 0);
             for (int j = 0; j < linkedNewCount; j++) {
                 String label = props.getProperty(pfx + "linkedNew." + j, "");
                 if (!label.trim().isEmpty()) {
@@ -455,5 +419,23 @@ public class ProjectStateSerializer {
 
     private static String emptyToNull(String s) {
         return (s == null || s.trim().isEmpty()) ? null : s.trim();
+    }
+
+    /**
+     * Parses an integer from a string, returning {@code defaultValue} if parsing fails.
+     *
+     * @param value        the string to parse
+     * @param defaultValue the value to return on parse failure
+     * @return parsed integer or defaultValue
+     */
+    private static int parseIntSafely(String value, int defaultValue) {
+        if (value == null) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
     }
 }
