@@ -124,7 +124,7 @@ public class ProjectStateSerializer {
             props.setProperty(pfx + "consulted",   String.join(",", draft.getConsultedElements()));
             props.setProperty(pfx + "dimension",   nvl(draft.getDimension()));
             props.setProperty(pfx + "criterion",   nvl(draft.getCriterionOrEnhancement()));
-            props.setProperty(pfx + "useCaseRef",  nvl(draft.getUseCaseReference()));
+            props.setProperty(pfx + "useCaseReference",  nvl(draft.getUseCaseReference()));
             props.setProperty(pfx + "expectedResponse", nvl(draft.getExpectedResponse()));
             props.setProperty(pfx + "notes",       nvl(draft.getNotes()));
             props.setProperty(pfx + "hasSourceAuthority",
@@ -257,7 +257,7 @@ public class ProjectStateSerializer {
             }
             draft.setDimension(emptyToNull(props.getProperty(pfx + "dimension", "")));
             draft.setCriterionOrEnhancement(emptyToNull(props.getProperty(pfx + "criterion", "")));
-            draft.setUseCaseReference(emptyToNull(props.getProperty(pfx + "useCaseRef", "")));
+            draft.setUseCaseReference(emptyToNull(props.getProperty(pfx + "useCaseReference", "")));
             draft.setExpectedResponse(emptyToNull(props.getProperty(pfx + "expectedResponse", "")));
             draft.setNotes(emptyToNull(props.getProperty(pfx + "notes", "")));
             draft.setHasSourceAuthority(Boolean.parseBoolean(
