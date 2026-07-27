@@ -56,7 +56,7 @@ public class TurtleExportService {
      * {@code <li>} tags are present.
      */
     private static final Pattern FITNESS_SPLIT_PATTERN =
-            Pattern.compile("(?:\\n+|\\s*[;•]+\\s*|\\s+-\\s+|\\.\\s+)");
+            Pattern.compile("(?:\\n+|\\s*[;•]+\\s*|\\s+-\\s+)");
     private static final Pattern LI_TAG_PATTERN =
             Pattern.compile("(?is)<li[^>]*>(.*?)</li>");
 
@@ -348,7 +348,7 @@ public class TurtleExportService {
 
         if (items.isEmpty()) {
             String noTags = stripTags(source);
-            // Split plain text into list items by newlines, bullets, semicolons, hyphens, or sentence breaks.
+            // Split plain text into list items by newlines, bullets, semicolons, or hyphens.
             for (String part : FITNESS_SPLIT_PATTERN.split(noTags, -1)) {
                 String cleaned = collapseWhitespace(part);
                 if (!isBlank(cleaned)) {
@@ -373,10 +373,7 @@ public class TurtleExportService {
         if (value == null) {
             return "";
         }
-        return collapseWhitespace(value
-                .replaceAll("(?is)</?(?!ul\\b|li\\b)[^>]+>", " ")
-                .replaceAll("(?is)</?ul[^>]*>", " ")
-                .replaceAll("(?is)</?li[^>]*>", " "));
+        return collapseWhitespace(value.replaceAll("(?is)<[^>]+>", " "));
     }
 
     private String buildSpecificationText(List<ExpectedResponseClause> clauses) {

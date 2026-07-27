@@ -168,7 +168,7 @@ class TurtleExportServiceTest {
 
         assertTrue(value.contains("<ul>") && value.contains("<li>"));
         assertFalse(value.contains("\n") || value.contains("\r"), "hasFitnessRequirements must be single-line");
-        assertFalse(value.matches("(?is).*</?(?!ul|li)[a-z][^>]*>.*"),
+        assertFalse(value.matches("(?is).*</?(?!ul\\b|li\\b)[a-z][^>]*>.*"),
                 "Only ul/li tags are allowed: " + value);
     }
 
