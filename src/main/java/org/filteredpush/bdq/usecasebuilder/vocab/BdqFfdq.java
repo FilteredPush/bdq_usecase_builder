@@ -93,6 +93,38 @@ public final class BdqFfdq {
     public static final Resource DataQualityMethod =
             ResourceFactory.createResource(NS + "DataQualityMethod");
 
+    /** {@code bdqffdq:ValidationMethod}. */
+    public static final Resource ValidationMethod =
+            ResourceFactory.createResource(NS + "ValidationMethod");
+
+    /** {@code bdqffdq:IssueMethod}. */
+    public static final Resource IssueMethod =
+            ResourceFactory.createResource(NS + "IssueMethod");
+
+    /** {@code bdqffdq:MeasurementMethod}. */
+    public static final Resource MeasurementMethod =
+            ResourceFactory.createResource(NS + "MeasurementMethod");
+
+    /** {@code bdqffdq:AmendmentMethod}. */
+    public static final Resource AmendmentMethod =
+            ResourceFactory.createResource(NS + "AmendmentMethod");
+
+    /** {@code bdqffdq:Specification}. */
+    public static final Resource Specification =
+            ResourceFactory.createResource(NS + "Specification");
+
+    /** {@code bdqffdq:InformationElement}. */
+    public static final Resource InformationElement =
+            ResourceFactory.createResource(NS + "InformationElement");
+
+    /** {@code bdqffdq:ActedUpon}. */
+    public static final Resource ActedUpon =
+            ResourceFactory.createResource(NS + "ActedUpon");
+
+    /** {@code bdqffdq:Consulted}. */
+    public static final Resource Consulted =
+            ResourceFactory.createResource(NS + "Consulted");
+
     /**
      * {@code bdqffdq:Implementation} – a concrete implementation of a data
      * quality method.
@@ -112,11 +144,11 @@ public final class BdqFfdq {
             ResourceFactory.createProperty(NS + "hasUseCase");
 
     /**
-     * {@code bdqffdq:includesInPolicy} – links a policy to each data quality
+     * {@code bdqffdq:includedInPolicy} – links a policy to each data quality
      * need (test) it includes.
      */
-    public static final Property includesInPolicy =
-            ResourceFactory.createProperty(NS + "includesInPolicy");
+    public static final Property includedInPolicy =
+            ResourceFactory.createProperty(NS + "includedInPolicy");
 
     /**
      * {@code bdqffdq:hasSpecification} – links a data quality need to its
@@ -126,11 +158,58 @@ public final class BdqFfdq {
             ResourceFactory.createProperty(NS + "hasSpecification");
 
     /**
-     * {@code bdqffdq:hasInformationElement} – links a test to the information
-     * element(s) it operates on.
+     * {@code bdqffdq:hasActedUponInformationElement} – links a test to the
+     * acted-upon information element node.
      */
-    public static final Property hasInformationElement =
-            ResourceFactory.createProperty(NS + "hasInformationElement");
+    public static final Property hasActedUponInformationElement =
+            ResourceFactory.createProperty(NS + "hasActedUponInformationElement");
+
+    /**
+     * {@code bdqffdq:hasConsultedInformationElement} – links a test to the
+     * consulted information element node.
+     */
+    public static final Property hasConsultedInformationElement =
+            ResourceFactory.createProperty(NS + "hasConsultedInformationElement");
+
+    /** {@code bdqffdq:composedOf}. */
+    public static final Property composedOf =
+            ResourceFactory.createProperty(NS + "composedOf");
+
+    /** {@code bdqffdq:hasDataQualityDimension}. */
+    public static final Property hasDataQualityDimension =
+            ResourceFactory.createProperty(NS + "hasDataQualityDimension");
+
+    /** {@code bdqffdq:hasCriterion}. */
+    public static final Property hasCriterion =
+            ResourceFactory.createProperty(NS + "hasCriterion");
+
+    /** {@code bdqffdq:hasEnhancement}. */
+    public static final Property hasEnhancement =
+            ResourceFactory.createProperty(NS + "hasEnhancement");
+
+    /** {@code bdqffdq:forValidation}. */
+    public static final Property forValidation =
+            ResourceFactory.createProperty(NS + "forValidation");
+
+    /** {@code bdqffdq:forIssue}. */
+    public static final Property forIssue =
+            ResourceFactory.createProperty(NS + "forIssue");
+
+    /** {@code bdqffdq:forMeasurement}. */
+    public static final Property forMeasurement =
+            ResourceFactory.createProperty(NS + "forMeasurement");
+
+    /** {@code bdqffdq:forAmendment}. */
+    public static final Property forAmendment =
+            ResourceFactory.createProperty(NS + "forAmendment");
+
+    /** {@code bdqffdq:hasExpectedResponse}. */
+    public static final Property hasExpectedResponse =
+            ResourceFactory.createProperty(NS + "hasExpectedResponse");
+
+    /** {@code bdqffdq:hasAuthoritiesDefaults}. */
+    public static final Property hasAuthoritiesDefaults =
+            ResourceFactory.createProperty(NS + "hasAuthoritiesDefaults");
 
     /**
      * {@code bdqffdq:implementedBy} – links an implementation to the method it
@@ -140,9 +219,17 @@ public final class BdqFfdq {
             ResourceFactory.createProperty(NS + "implementedBy");
 
     /**
-     * {@code bdqffdq:hasFitnessForUsePurpose} – describes the fitness-for-use
+     * {@code bdqffdq:hasFitnessRequirements} – describes the fitness-for-use
      * purpose of a use case (the narrative requirements that motivated the use case).
      */
-    public static final Property hasFitnessForUsePurpose =
-            ResourceFactory.createProperty(NS + "hasFitnessForUsePurpose");
+    public static final Property hasFitnessRequirements =
+            ResourceFactory.createProperty(NS + "hasFitnessRequirements");
+
+    /** @deprecated Use {@link #includedInPolicy}. */
+    @Deprecated
+    public static final Property includesInPolicy = includedInPolicy;
+
+    /** @deprecated Use {@link #hasFitnessRequirements}. */
+    @Deprecated
+    public static final Property hasFitnessForUsePurpose = hasFitnessRequirements;
 }

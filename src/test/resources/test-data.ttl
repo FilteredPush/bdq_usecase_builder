@@ -7,7 +7,7 @@
 # ---------------------------------------------------------------------------
 
 # A sample use case
-<urn:uuid:test-usecase-001>
+<urn:uuid:6f80dc9d-4fcb-4673-8fd8-9d2a7f4d7c4e>
     a bdqffdq:UseCase ;
     rdfs:label "Test Use Case" ;
     rdfs:comment "A use case for unit testing" .

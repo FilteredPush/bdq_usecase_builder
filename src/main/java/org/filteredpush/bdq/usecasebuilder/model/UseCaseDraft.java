@@ -43,7 +43,7 @@ public class UseCaseDraft {
 
     /**
      * Returns the narrative text describing the fitness-for-use requirements
-     * that motivated this use case (the {@code hasFitnessForUsePurpose} text).
+     * that motivated this use case (the {@code hasFitnessRequirements} text).
      */
     public String getFitnessRequirementsText() {
         return fitnessRequirementsText;

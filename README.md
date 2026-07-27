@@ -162,6 +162,28 @@ Use `getAllInformationElements()` on the draft to populate token pickers for cla
 
 The Turtle output uses stable namespace prefixes (`bdqffdq:`, `bdqtest:`, `dwc:`, etc.) and is serialized by Apache Jena.
 
+Export mapping is constrained to a closed set of bdqffdq predicates/classes to prevent vocabulary drift. Key mappings:
+
+- Use case requirements: `bdqffdq:hasFitnessRequirements` (not `hasFitnessForUsePurpose`).
+- Policy membership: `bdqffdq:includedInPolicy` (not `includesInPolicy`).
+- Test dimension: `bdqffdq:hasDataQualityDimension` (not `hasDimension`).
+- Information-element links:
+  - `bdqffdq:hasActedUponInformationElement`
+  - `bdqffdq:hasConsultedInformationElement`
+  - each role node uses one or more `bdqffdq:composedOf` triples.
+- Specification linkage:
+  - `Need <- forX - Method - hasSpecification -> Specification`
+  - `Need` does not directly use `hasSpecification`.
+- Expected response remains on specification via `bdqffdq:hasExpectedResponse`.
+- `bdqffdq:hasAuthoritiesDefaults` is omitted when empty.
+
+`bdqffdq:hasFitnessRequirements` export formatting rules:
+
+- Always serialized as a **single-line** string.
+- Always contains `<ul><li>…</li></ul>`.
+- No newline characters.
+- No HTML tags other than `ul` and `li` (disallowed tags are stripped/normalized at export time).
+
 ### SHACL-aligned pre-export validation (B9)
 
 `ShaclValidationService` checks the project state against bdqffdq-aligned constraints:
@@ -198,7 +220,7 @@ draft.addConsultedElement("dwc:taxonRank");
 List<String> all = draft.getAllInformationElements(); // [scientificName, kingdom, taxonRank]
 ```
 
-The Turtle export maps each element to a separate `bdqffdq:InformationElement` resource with `ActedUpon` or `Consulted` subtype.
+The Turtle export maps selected terms into role-specific `bdqffdq:InformationElement` nodes (`ActedUpon` / `Consulted`) and serializes each selected term with `bdqffdq:composedOf`.
 
 ---
 
@@ -298,4 +320,3 @@ src/main/resources/
 ```bash
 mvn test
 ```
-

@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class UsecaseModelTest {
 
-    private static final String TEST_IRI   = "urn:uuid:test-usecase-001";
+    private static final String TEST_IRI   = "urn:uuid:6f80dc9d-4fcb-4673-8fd8-9d2a7f4d7c4e";
     private static final String TEST_LABEL = "Test Use Case";
     private static final String TEST_DESC  = "A test use case for unit testing";
 
