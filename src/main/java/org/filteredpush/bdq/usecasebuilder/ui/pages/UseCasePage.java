@@ -249,8 +249,8 @@ public class UseCasePage extends WizardPage {
         String bullets = "";
         int ulStart = html.indexOf("<ul>");
         if (ulStart >= 0) {
-            lead = html.substring(0, ulStart)
-                    .replaceAll("</?p>", "").trim();
+            lead = unescapeHtml(html.substring(0, ulStart)
+                    .replaceAll("</?p>", "").trim());
             // Extract <li> items
             StringBuilder sb = new StringBuilder();
             int pos = ulStart;
@@ -260,12 +260,12 @@ public class UseCasePage extends WizardPage {
                 int liEnd = html.indexOf("</li>", liStart);
                 if (liEnd < 0) break;
                 if (sb.length() > 0) sb.append('\n');
-                sb.append(html.substring(liStart + 4, liEnd).trim());
+                sb.append(unescapeHtml(html.substring(liStart + 4, liEnd).trim()));
                 pos = liEnd + 5;
             }
             bullets = sb.toString();
         } else {
-            lead = html.replaceAll("<[^>]+>", "").trim();
+            lead = unescapeHtml(html.replaceAll("<[^>]+>", "").trim());
         }
         fitnessLeadArea.setText(lead);
         fitnessPropertiesArea.setText(bullets);
@@ -306,8 +306,7 @@ public class UseCasePage extends WizardPage {
     /**
      * Builds the fitness-for-use requirements text in HTML format:
      * {@code <p>lead</p><ul><li>item1</li><li>item2</li></ul>}.
-     * If there are no bullet points, only the lead paragraph is returned
-     * (still wrapped in {@code <p>}).
+     * If there are no bullet points, only the lead paragraph is returned.
      * Returns an empty string if both fields are empty.
      */
     private String buildFitnessRequirementsText() {
@@ -329,16 +328,38 @@ public class UseCasePage extends WizardPage {
 
         StringBuilder text = new StringBuilder();
         if (!lead.isEmpty()) {
-            text.append("<p>").append(lead).append("</p>");
+            text.append("<p>").append(escapeHtml(lead)).append("</p>");
         }
         if (!items.isEmpty()) {
             text.append("\n<ul>\n");
             for (String item : items) {
-                text.append("<li>").append(item).append("</li>\n");
+                text.append("<li>").append(escapeHtml(item)).append("</li>\n");
             }
-            text.append("</ul>");
+            text.append("</ul>\n");
         }
         return text.toString().trim();
+    }
+
+    /** Escapes HTML special characters in user-entered text. */
+    private static String escapeHtml(String text) {
+        if (text == null) {
+            return "";
+        }
+        return text.replace("&", "&amp;")
+                   .replace("<", "&lt;")
+                   .replace(">", "&gt;")
+                   .replace("\"", "&quot;");
+    }
+
+    /** Reverses HTML escaping for the entities produced by {@link #escapeHtml}. */
+    private static String unescapeHtml(String text) {
+        if (text == null) {
+            return "";
+        }
+        return text.replace("&quot;", "\"")
+                   .replace("&gt;", ">")
+                   .replace("&lt;", "<")
+                   .replace("&amp;", "&");
     }
 
     private void markFitnessLeadEdited() {
