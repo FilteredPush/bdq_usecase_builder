@@ -109,11 +109,16 @@ public class TestCatalogService {
         if (newEntries == null) {
             return;
         }
+        int added = 0;
         for (TestCatalogEntry e : newEntries) {
+            int before = entries.size();
             addEntry(e);
+            if (entries.size() > before) {
+                added++;
+            }
         }
-        logger.info("Added {} entries from external source; catalog now has {} entries",
-                newEntries.size(), entries.size());
+        logger.info("Added {}/{} entries from external source (duplicates skipped); catalog now has {} entries",
+                added, newEntries.size(), entries.size());
     }
 
     // -----------------------------------------------------------------------

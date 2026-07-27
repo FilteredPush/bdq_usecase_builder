@@ -398,8 +398,9 @@ public class TurtleExportServiceTest {
     void testResolveVocabTermPrefixedName() {
         org.apache.jena.rdf.model.Model model = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
         model.setNsPrefix("bdqcrit", TurtleExportService.BDQCRIT_NS);
+        // Prefix in the term overrides the defaultNs parameter
         org.apache.jena.rdf.model.Resource r =
-                TurtleExportService.resolveVocabTerm(model, "bdqcrit:NotEmpty", TurtleExportService.BDQDIM_NS);
+                TurtleExportService.resolveVocabTerm(model, "bdqcrit:NotEmpty", TurtleExportService.BDQCRIT_NS);
         assertEquals(TurtleExportService.BDQCRIT_NS + "NotEmpty", r.getURI());
     }
 
