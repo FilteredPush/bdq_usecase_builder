@@ -82,7 +82,8 @@ public class WizardFrame extends JFrame {
     public WizardFrame() {
         super("BDQ Use Case Builder Wizard");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setPreferredSize(new Dimension(900, 700));
+        setPreferredSize(new Dimension(1200, 860));
+        setMinimumSize(new Dimension(1100, 780));
         setLayout(new BorderLayout());
 
         // Header
@@ -128,7 +129,7 @@ public class WizardFrame extends JFrame {
         pages.add(new ExistingTestsPage(state, catalogService));
         pages.add(new NewTestPage(state, vocabularyService, catalogService));
         pages.add(new ParameterDefaultsPage(state));
-        pages.add(new GapAnalysisPage(state));
+        pages.add(new GapAnalysisPage(state, catalogService));
         pages.add(new ConformanceDataPage(state));
         pages.add(new ReviewExportPage(state));
 

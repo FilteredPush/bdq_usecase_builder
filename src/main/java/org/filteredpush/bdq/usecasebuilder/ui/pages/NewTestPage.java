@@ -59,22 +59,32 @@ public class NewTestPage extends WizardPage {
     private JComboBox<String> dimensionCombo;
     private JComboBox<String> criterionCombo;
     private JComboBox<String> useCaseRefCombo;
-    private JComboBox<String> responseStatusCombo;
-    private JComboBox<String> responseResultCombo;
+    private JComboBox<String> responseValueCombo;
     private JTextField responseConditionField;
     private JTextField responseCommentField;
     private DefaultListModel<ExpectedResponseClause> responseClauseListModel;
     private JList<ExpectedResponseClause> responseClauseList;
     private JTextArea expectedResponseArea;
     private JTextArea notesArea;
+    private JButton addIfButton;
+    private JButton addElseButton;
+    private JButton removeClauseButton;
+    private JButton moveUpButton;
+    private JButton moveDownButton;
+    private JButton saveDraftButton;
     private DefaultListModel<String> coverageListModel;
     private JList<String> coverageList;
+    private JPanel testDetailsPanel;
 
     private boolean updatingForm = false;
     private final ValidationService validationService = new ValidationService();
     private final ExpectedResponseClauseService clauseService = new ExpectedResponseClauseService();
     private final VocabularyService vocabularyService;
     private final TestCatalogService catalogService;
+    private static final Set<String> RESPONSE_STATUS_VALUES = Set.of(
+            "RUN_HAS_RESULT",
+            "INTERNAL_PREREQUISITES_NOT_MET",
+            "EXTERNAL_PREREQUISITES_NOT_MET");
 
     /**
      * Creates the new test definition page.
@@ -107,6 +117,7 @@ public class NewTestPage extends WizardPage {
         refreshPicklists();
         refreshCoverageList();
         clearForm();
+        setTestDetailsEnabled(false);
     }
 
     @Override
@@ -189,8 +200,8 @@ public class NewTestPage extends WizardPage {
     }
 
     private JPanel buildForm() {
-        JPanel form = new JPanel(new GridBagLayout());
-        form.setBorder(BorderFactory.createTitledBorder("Test details"));
+        testDetailsPanel = new JPanel(new GridBagLayout());
+        testDetailsPanel.setBorder(BorderFactory.createTitledBorder("Test details"));
 
         labelField = new JTextField(30);
         labelField.setToolTipText(
@@ -212,12 +223,9 @@ public class NewTestPage extends WizardPage {
         useCaseRefCombo = new JComboBox<>();
         useCaseRefCombo.setEditable(true);
         useCaseRefCombo.setToolTipText("Use-case reference (current use case plus optional bdquc terms)");
-        responseResultCombo = new JComboBox<>();
-        responseResultCombo.setEditable(false);
-        responseResultCombo.setToolTipText("response.result value");
-        responseStatusCombo = new JComboBox<>();
-        responseStatusCombo.setEditable(false);
-        responseStatusCombo.setToolTipText("response.status value");
+        responseValueCombo = new JComboBox<>();
+        responseValueCombo.setEditable(false);
+        responseValueCombo.setToolTipText("Expected response value (status/result inferred)");
         responseConditionField = new JTextField(24);
         responseConditionField.setToolTipText("Condition for this expected response clause");
         responseCommentField = new JTextField(24);
@@ -233,51 +241,50 @@ public class NewTestPage extends WizardPage {
         notesArea.setLineWrap(true);
         notesArea.setWrapStyleWord(true);
 
-        addRow(form, "Label:", labelField, 0);
-        addRow(form, "Preferred label:", prefLabelField, 1);
-        addRow(form, "Type *:", typeCombo, 2);
-        addRow(form, "Resource type:", resourceTypeCombo, 3);
-        addRow(form, "Information element:", informationElementCombo, 4);
-        addRow(form, "Dimension:", dimensionCombo, 5);
-        addRow(form, "Criterion/Enhancement:", criterionCombo, 6);
-        addRow(form, "Use-case reference:", useCaseRefCombo, 7);
+        addRow(testDetailsPanel, "Label:", labelField, 0);
+        addRow(testDetailsPanel, "Preferred label:", prefLabelField, 1);
+        addRow(testDetailsPanel, "Type *:", typeCombo, 2);
+        addRow(testDetailsPanel, "Resource type:", resourceTypeCombo, 3);
+        addRow(testDetailsPanel, "Information element:", informationElementCombo, 4);
+        addRow(testDetailsPanel, "Dimension:", dimensionCombo, 5);
+        addRow(testDetailsPanel, "Criterion/Enhancement:", criterionCombo, 6);
+        addRow(testDetailsPanel, "Use-case reference:", useCaseRefCombo, 7);
 
         GridBagConstraints lc = labelConstraints(8);
-        form.add(new JLabel("IF condition:"), lc);
+        testDetailsPanel.add(new JLabel("IF condition:"), lc);
         JPanel clausePanel = new JPanel(new BorderLayout(4, 0));
         clausePanel.add(responseConditionField, BorderLayout.CENTER);
         JPanel clauseRight = new JPanel(new BorderLayout(4, 0));
         JPanel statusResultPanel = new JPanel(new BorderLayout(4, 0));
-        statusResultPanel.add(responseStatusCombo, BorderLayout.WEST);
-        statusResultPanel.add(responseResultCombo, BorderLayout.CENTER);
+        statusResultPanel.add(responseValueCombo, BorderLayout.CENTER);
         clauseRight.add(statusResultPanel, BorderLayout.CENTER);
-        JButton addIfButton = new JButton("Add IF");
+        addIfButton = new JButton("Add IF");
         addIfButton.addActionListener(e -> addExpectedResponseClause(false));
         clauseRight.add(addIfButton, BorderLayout.EAST);
         clausePanel.add(clauseRight, BorderLayout.EAST);
         GridBagConstraints fc = fieldConstraints(8);
-        form.add(clausePanel, fc);
+        testDetailsPanel.add(clausePanel, fc);
 
         lc = labelConstraints(9);
-        form.add(new JLabel("Comment template:"), lc);
+        testDetailsPanel.add(new JLabel("Comment template:"), lc);
         fc = fieldConstraints(9);
-        form.add(responseCommentField, fc);
+        testDetailsPanel.add(responseCommentField, fc);
 
         lc = labelConstraints(10);
-        form.add(new JLabel("Clauses:"), lc);
+        testDetailsPanel.add(new JLabel("Clauses:"), lc);
         fc = fieldConstraints(10);
         fc.fill = GridBagConstraints.BOTH;
         fc.weighty = 0.4;
-        form.add(new JScrollPane(responseClauseList), fc);
+        testDetailsPanel.add(new JScrollPane(responseClauseList), fc);
 
         JPanel clauseButtons = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 4, 0));
-        JButton addElseButton = new JButton("Add ELSE");
+        addElseButton = new JButton("Add ELSE");
         addElseButton.addActionListener(e -> addExpectedResponseClause(true));
-        JButton removeClauseButton = new JButton("Remove");
+        removeClauseButton = new JButton("Remove");
         removeClauseButton.addActionListener(e -> removeSelectedClause());
-        JButton moveUpButton = new JButton("Move up");
+        moveUpButton = new JButton("Move up");
         moveUpButton.addActionListener(e -> moveSelectedClause(-1));
-        JButton moveDownButton = new JButton("Move down");
+        moveDownButton = new JButton("Move down");
         moveDownButton.addActionListener(e -> moveSelectedClause(1));
         clauseButtons.add(addElseButton);
         clauseButtons.add(removeClauseButton);
@@ -288,34 +295,34 @@ public class NewTestPage extends WizardPage {
         rc.gridx = 1;
         rc.anchor = GridBagConstraints.WEST;
         rc.insets = new Insets(2, 0, 0, 0);
-        form.add(clauseButtons, rc);
+        testDetailsPanel.add(clauseButtons, rc);
 
         lc = labelConstraints(12);
-        form.add(new JLabel("Expected response preview:"), lc);
+        testDetailsPanel.add(new JLabel("Expected response preview:"), lc);
         fc = fieldConstraints(12);
         fc.fill = GridBagConstraints.BOTH;
         fc.weighty = 0.6;
-        form.add(new JScrollPane(expectedResponseArea), fc);
+        testDetailsPanel.add(new JScrollPane(expectedResponseArea), fc);
 
         lc = labelConstraints(13);
-        form.add(new JLabel("Notes:"), lc);
+        testDetailsPanel.add(new JLabel("Notes:"), lc);
         fc = fieldConstraints(13);
         fc.fill = GridBagConstraints.BOTH;
         fc.weighty = 0.4;
-        form.add(new JScrollPane(notesArea), fc);
+        testDetailsPanel.add(new JScrollPane(notesArea), fc);
 
-        JButton saveButton = new JButton("Save draft");
-        saveButton.addActionListener(e -> saveCurrentDraft());
+        saveDraftButton = new JButton("Save draft");
+        saveDraftButton.addActionListener(e -> saveCurrentDraft());
         GridBagConstraints bc = new GridBagConstraints();
         bc.gridy = 14;
         bc.gridx = 1;
         bc.anchor = GridBagConstraints.WEST;
         bc.insets = new Insets(8, 0, 0, 0);
-        form.add(saveButton, bc);
+        testDetailsPanel.add(saveDraftButton, bc);
 
         typeCombo.addActionListener(e -> refreshCriterionPicklistByType());
 
-        return form;
+        return testDetailsPanel;
     }
 
     private void addRow(JPanel form, String labelText, java.awt.Component field, int gridy) {
@@ -352,21 +359,30 @@ public class NewTestPage extends WizardPage {
         listModel.addElement(draft);
         draftList.setSelectedIndex(listModel.size() - 1);
         loadDraftIntoForm(draft);
+        setTestDetailsEnabled(true);
     }
 
     private void deleteSelectedDraft() {
         int idx = draftList.getSelectedIndex();
         if (idx >= 0) {
             listModel.remove(idx);
-            clearForm();
+            if (listModel.isEmpty()) {
+                clearForm();
+                setTestDetailsEnabled(false);
+            } else {
+                int next = Math.min(idx, listModel.size() - 1);
+                draftList.setSelectedIndex(next);
+            }
         }
     }
 
     private void loadDraftIntoForm(TestDraft draft) {
         if (draft == null) {
             clearForm();
+            setTestDetailsEnabled(false);
             return;
         }
+        setTestDetailsEnabled(true);
         updatingForm = true;
         labelField.setText(nvl(draft.getLabel()));
         prefLabelField.setText(nvl(draft.getPrefLabel()));
@@ -469,29 +485,22 @@ public class NewTestPage extends WizardPage {
     }
 
     private void refreshResponseResultsByType() {
-        if (responseResultCombo == null) {
+        if (responseValueCombo == null) {
             return;
         }
         List<String> responseValues = new ArrayList<>();
-        List<String> responseStatuses = new ArrayList<>();
-        responseStatuses.add("RUN_HAS_RESULT");
-        responseStatuses.add("INTERNAL_PREREQUISITES_NOT_MET");
-        responseStatuses.add("EXTERNAL_PREREQUISITES_NOT_MET");
+        responseValues.add("INTERNAL_PREREQUISITES_NOT_MET");
+        responseValues.add("EXTERNAL_PREREQUISITES_NOT_MET");
         TestType selectedType = (TestType) typeCombo.getSelectedItem();
         if (selectedType == TestType.AMENDMENT) {
             responseValues.add("AMENDED");
             responseValues.add("COMPLETE");
-            responseValues.add("INTERNAL_PREREQUISITES_NOT_MET");
-            responseValues.add("EXTERNAL_PREREQUISITES_NOT_MET");
         } else {
             responseValues.add("COMPLIANT");
             responseValues.add("NOT_COMPLIANT");
             responseValues.add("COMPLETE");
-            responseValues.add("INTERNAL_PREREQUISITES_NOT_MET");
-            responseValues.add("EXTERNAL_PREREQUISITES_NOT_MET");
         }
-        resetComboItems(responseStatusCombo, responseStatuses);
-        resetComboItems(responseResultCombo, responseValues);
+        resetComboItems(responseValueCombo, responseValues);
     }
 
     private void resetComboItems(JComboBox<String> combo, List<String> items) {
@@ -515,10 +524,9 @@ public class NewTestPage extends WizardPage {
 
     private void addExpectedResponseClause(boolean elseClause) {
         String condition = responseConditionField.getText().trim();
-        String status = getSelectedComboText(responseStatusCombo);
-        String result = getSelectedComboText(responseResultCombo);
+        String selectedValue = getSelectedComboText(responseValueCombo);
         String comment = responseCommentField.getText().trim();
-        if ((!elseClause && condition.isEmpty()) || status.isEmpty() || result.isEmpty()) {
+        if ((!elseClause && condition.isEmpty()) || selectedValue.isEmpty()) {
             JOptionPane.showMessageDialog(this,
                     "Provide required clause details.",
                     "Missing clause details",
@@ -528,8 +536,13 @@ public class NewTestPage extends WizardPage {
         ExpectedResponseClause clause = new ExpectedResponseClause();
         clause.setElseClause(elseClause);
         clause.setCondition(elseClause ? "" : condition);
-        clause.setStatus(status);
-        clause.setResult(result);
+        if (RESPONSE_STATUS_VALUES.contains(selectedValue)) {
+            clause.setStatus(selectedValue);
+            clause.setResult("");
+        } else {
+            clause.setStatus("RUN_HAS_RESULT");
+            clause.setResult(selectedValue);
+        }
         clause.setCommentTemplate(comment);
         responseClauseListModel.addElement(clause);
         responseConditionField.setText("");
@@ -632,5 +645,31 @@ public class NewTestPage extends WizardPage {
 
     private static String nvl(String s) {
         return s != null ? s : "";
+    }
+
+    private void setTestDetailsEnabled(boolean enabled) {
+        labelField.setEnabled(enabled);
+        prefLabelField.setEnabled(enabled);
+        typeCombo.setEnabled(enabled);
+        resourceTypeCombo.setEnabled(enabled);
+        informationElementCombo.setEnabled(enabled);
+        dimensionCombo.setEnabled(enabled);
+        criterionCombo.setEnabled(enabled);
+        useCaseRefCombo.setEnabled(enabled);
+        responseConditionField.setEnabled(enabled);
+        responseValueCombo.setEnabled(enabled);
+        responseCommentField.setEnabled(enabled);
+        responseClauseList.setEnabled(enabled);
+        expectedResponseArea.setEnabled(enabled);
+        notesArea.setEnabled(enabled);
+        addIfButton.setEnabled(enabled);
+        addElseButton.setEnabled(enabled);
+        removeClauseButton.setEnabled(enabled);
+        moveUpButton.setEnabled(enabled);
+        moveDownButton.setEnabled(enabled);
+        saveDraftButton.setEnabled(enabled);
+        if (testDetailsPanel != null) {
+            testDetailsPanel.setEnabled(enabled);
+        }
     }
 }

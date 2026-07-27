@@ -59,10 +59,27 @@ public class ExpectedResponseClause {
         } else {
             sb.append("IF ").append(condition != null ? condition : "");
         }
-        sb.append(" THEN status=").append(status != null ? status : "");
-        sb.append("; result=").append(result != null ? result : "");
-        if (commentTemplate != null && !commentTemplate.trim().isEmpty()) {
-            sb.append("; comment=").append(commentTemplate.trim());
+        sb.append(" THEN");
+        boolean hasAssignment = false;
+        String statusValue = status != null ? status.trim() : "";
+        String resultValue = result != null ? result.trim() : "";
+        String commentValue = commentTemplate != null ? commentTemplate.trim() : "";
+        if (!statusValue.isEmpty()) {
+            sb.append(" status=").append(statusValue);
+            hasAssignment = true;
+        }
+        if (!resultValue.isEmpty()) {
+            if (hasAssignment) {
+                sb.append(';');
+            }
+            sb.append(" result=").append(resultValue);
+            hasAssignment = true;
+        }
+        if (!commentValue.isEmpty()) {
+            if (hasAssignment) {
+                sb.append(';');
+            }
+            sb.append(" comment=").append(commentValue);
         }
         return sb.toString();
     }

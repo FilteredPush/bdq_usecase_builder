@@ -1,9 +1,12 @@
 package org.filteredpush.bdq.usecasebuilder.ui.pages;
 
+import org.filteredpush.bdq.usecasebuilder.catalog.TestCatalogEntry;
+import org.filteredpush.bdq.usecasebuilder.catalog.TestCatalogService;
 import org.filteredpush.bdq.usecasebuilder.model.ProjectState;
 import org.filteredpush.bdq.usecasebuilder.model.RequirementCoverage;
 import org.filteredpush.bdq.usecasebuilder.model.TestDraft;
 import org.filteredpush.bdq.usecasebuilder.service.GapAnalysisService;
+import org.filteredpush.bdq.usecasebuilder.service.InformationElementTermService;
 import org.filteredpush.bdq.usecasebuilder.ui.WizardPage;
 
 import javax.swing.BorderFactory;
@@ -20,7 +23,12 @@ import javax.swing.table.AbstractTableModel;
 import java.awt.BorderLayout;
 import java.awt.Font;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Wizard page for requirement-to-test gap analysis.
@@ -28,18 +36,31 @@ import java.util.List;
 public class GapAnalysisPage extends WizardPage {
 
     private final GapAnalysisService gapAnalysisService = new GapAnalysisService();
+    private final TestCatalogService catalogService;
     private CoverageTableModel tableModel;
     private JTable matrixTable;
     private DefaultListModel<String> existingTestsModel;
     private DefaultListModel<String> newTestsModel;
+    private DefaultListModel<String> mappedExistingTestsModel;
+    private DefaultListModel<String> mappedNewTestsModel;
     private JList<String> existingTestsList;
     private JList<String> newTestsList;
+    private JList<String> mappedExistingTestsList;
+    private JList<String> mappedNewTestsList;
     private JTextArea rationaleArea;
     private JTextArea notesArea;
     private JLabel coverageSummaryLabel;
+    private final Map<String, String> existingOptionToIri = new LinkedHashMap<>();
+    private final Map<String, String> iriToExistingOption = new LinkedHashMap<>();
+    private final Map<String, String> newOptionToLabel = new LinkedHashMap<>();
+    private final Map<String, TestCatalogEntry> catalogEntriesByIri = new LinkedHashMap<>();
 
-    public GapAnalysisPage(ProjectState state) {
+    public GapAnalysisPage(ProjectState state, TestCatalogService catalogService) {
         super(state);
+        this.catalogService = catalogService;
+        for (TestCatalogEntry entry : catalogService.getEntries()) {
+            catalogEntriesByIri.put(entry.getIri(), entry);
+        }
         buildUi();
     }
 
@@ -53,7 +74,8 @@ public class GapAnalysisPage extends WizardPage {
         List<RequirementCoverage> rows = gapAnalysisService.buildRows(state);
         tableModel.load(rows);
         state.setRequirementCoverageRows(rows);
-        refreshTestLists();
+        refreshTestOptionsForRow(getSelectedRow());
+        refreshMappedLists(getSelectedRow());
         refreshCoverageSummary();
     }
 
@@ -113,7 +135,7 @@ public class GapAnalysisPage extends WizardPage {
 
     private JPanel buildExistingTestMappingPanel() {
         JPanel panel = new JPanel(new BorderLayout(4, 4));
-        panel.setBorder(BorderFactory.createTitledBorder("Link existing tests"));
+        panel.setBorder(BorderFactory.createTitledBorder("Existing tests by acted-upon information element"));
         existingTestsModel = new DefaultListModel<>();
         existingTestsList = new JList<>(existingTestsModel);
         existingTestsList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
@@ -121,17 +143,27 @@ public class GapAnalysisPage extends WizardPage {
         JPanel buttons = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 4, 0));
         JButton link = new JButton("Link selected");
         link.addActionListener(e -> linkSelectedExistingTests());
-        JButton unlink = new JButton("Unlink selected");
-        unlink.addActionListener(e -> unlinkSelectedExistingTests());
         buttons.add(link);
-        buttons.add(unlink);
         panel.add(buttons, BorderLayout.SOUTH);
-        return panel;
+        JPanel mappedPanel = new JPanel(new BorderLayout(4, 4));
+        mappedPanel.setBorder(BorderFactory.createTitledBorder("Mapped existing tests"));
+        mappedExistingTestsModel = new DefaultListModel<>();
+        mappedExistingTestsList = new JList<>(mappedExistingTestsModel);
+        mappedExistingTestsList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        mappedPanel.add(new JScrollPane(mappedExistingTestsList), BorderLayout.CENTER);
+        JButton unlinkMapped = new JButton("Remove mapped");
+        unlinkMapped.addActionListener(e -> unlinkMappedExistingTests());
+        mappedPanel.add(unlinkMapped, BorderLayout.SOUTH);
+
+        JPanel wrap = new JPanel(new BorderLayout(4, 4));
+        wrap.add(panel, BorderLayout.CENTER);
+        wrap.add(mappedPanel, BorderLayout.SOUTH);
+        return wrap;
     }
 
     private JPanel buildNewTestMappingPanel() {
         JPanel panel = new JPanel(new BorderLayout(4, 4));
-        panel.setBorder(BorderFactory.createTitledBorder("Link new tests"));
+        panel.setBorder(BorderFactory.createTitledBorder("New tests by acted-upon information element"));
         newTestsModel = new DefaultListModel<>();
         newTestsList = new JList<>(newTestsModel);
         newTestsList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
@@ -139,26 +171,61 @@ public class GapAnalysisPage extends WizardPage {
         JPanel buttons = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 4, 0));
         JButton link = new JButton("Link selected");
         link.addActionListener(e -> linkSelectedNewTests());
-        JButton unlink = new JButton("Unlink selected");
-        unlink.addActionListener(e -> unlinkSelectedNewTests());
         buttons.add(link);
-        buttons.add(unlink);
         panel.add(buttons, BorderLayout.SOUTH);
-        return panel;
+        JPanel mappedPanel = new JPanel(new BorderLayout(4, 4));
+        mappedPanel.setBorder(BorderFactory.createTitledBorder("Mapped new tests"));
+        mappedNewTestsModel = new DefaultListModel<>();
+        mappedNewTestsList = new JList<>(mappedNewTestsModel);
+        mappedNewTestsList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        mappedPanel.add(new JScrollPane(mappedNewTestsList), BorderLayout.CENTER);
+        JButton unlinkMapped = new JButton("Remove mapped");
+        unlinkMapped.addActionListener(e -> unlinkMappedNewTests());
+        mappedPanel.add(unlinkMapped, BorderLayout.SOUTH);
+
+        JPanel wrap = new JPanel(new BorderLayout(4, 4));
+        wrap.add(panel, BorderLayout.CENTER);
+        wrap.add(mappedPanel, BorderLayout.SOUTH);
+        return wrap;
     }
 
-    private void refreshTestLists() {
+    private void refreshTestOptionsForRow(RequirementCoverage row) {
+        existingOptionToIri.clear();
+        iriToExistingOption.clear();
+        newOptionToLabel.clear();
         existingTestsModel.clear();
+        Set<String> rowTerms = termsForRow(row);
         for (String iri : state.getSelectedExistingTestIris()) {
-            existingTestsModel.addElement(iri);
+            TestCatalogEntry entry = findCatalogEntry(iri);
+            if (entry == null) {
+                continue;
+            }
+            Set<String> testTerms = InformationElementTermService.extractQualifiedTerms(
+                    entry.getLabel(), entry.getPrefLabel());
+            if (!rowTerms.isEmpty() && !InformationElementTermService.matchesAnySelectedTerm(testTerms, rowTerms)) {
+                continue;
+            }
+            String option = displayNameForEntry(entry);
+            if (existingOptionToIri.containsKey(option)) {
+                option = option + " <" + iri + ">";
+            }
+            existingTestsModel.addElement(option);
+            existingOptionToIri.put(option, iri);
+            iriToExistingOption.put(iri, option);
         }
         newTestsModel.clear();
         for (TestDraft draft : state.getNewTestDrafts()) {
-            if (draft.getLabel() != null && !draft.getLabel().trim().isEmpty()) {
-                newTestsModel.addElement(draft.getLabel().trim());
-            } else {
-                newTestsModel.addElement(draft.toString());
+            String label = draft.getLabel() != null && !draft.getLabel().trim().isEmpty()
+                    ? draft.getLabel().trim() : draft.toString();
+            String infoElement = draft.getInformationElement() != null
+                    ? draft.getInformationElement().trim() : "";
+            String normalizedInfoElement = infoElement.toLowerCase(Locale.ROOT);
+            if (!rowTerms.isEmpty() && !rowTerms.contains(normalizedInfoElement)) {
+                continue;
             }
+            String option = label + (infoElement.isEmpty() ? "" : " [" + infoElement + "]");
+            newTestsModel.addElement(option);
+            newOptionToLabel.put(option, label);
         }
     }
 
@@ -167,11 +234,15 @@ public class GapAnalysisPage extends WizardPage {
         if (row == null) {
             rationaleArea.setText("");
             notesArea.setText("");
+            refreshTestOptionsForRow(null);
+            refreshMappedLists(null);
             return;
         }
         rationaleArea.setText(row.getPartialCoverageRationale() != null
                 ? row.getPartialCoverageRationale() : "");
         notesArea.setText(row.getNotes() != null ? row.getNotes() : "");
+        refreshTestOptionsForRow(row);
+        refreshMappedLists(row);
     }
 
     private RequirementCoverage getSelectedRow() {
@@ -189,23 +260,31 @@ public class GapAnalysisPage extends WizardPage {
             return;
         }
         for (String selected : existingTestsList.getSelectedValuesList()) {
-            if (!row.getLinkedExistingTests().contains(selected)) {
-                row.getLinkedExistingTests().add(selected);
+            String iri = existingOptionToIri.get(selected);
+            if (iri != null && !row.getLinkedExistingTests().contains(iri)) {
+                row.getLinkedExistingTests().add(iri);
             }
         }
         saveDetails(row);
         tableModel.fireTableDataChanged();
+        refreshMappedLists(row);
         refreshCoverageSummary();
     }
 
-    private void unlinkSelectedExistingTests() {
+    private void unlinkMappedExistingTests() {
         RequirementCoverage row = getSelectedRow();
         if (row == null) {
             return;
         }
-        row.getLinkedExistingTests().removeAll(existingTestsList.getSelectedValuesList());
+        for (String selected : mappedExistingTestsList.getSelectedValuesList()) {
+            String iri = resolveMappedExistingSelectionToIri(selected, row);
+            if (iri != null) {
+                row.getLinkedExistingTests().remove(iri);
+            }
+        }
         saveDetails(row);
         tableModel.fireTableDataChanged();
+        refreshMappedLists(row);
         refreshCoverageSummary();
     }
 
@@ -215,23 +294,26 @@ public class GapAnalysisPage extends WizardPage {
             return;
         }
         for (String selected : newTestsList.getSelectedValuesList()) {
-            if (!row.getLinkedNewTests().contains(selected)) {
-                row.getLinkedNewTests().add(selected);
+            String label = newOptionToLabel.getOrDefault(selected, selected);
+            if (!row.getLinkedNewTests().contains(label)) {
+                row.getLinkedNewTests().add(label);
             }
         }
         saveDetails(row);
         tableModel.fireTableDataChanged();
+        refreshMappedLists(row);
         refreshCoverageSummary();
     }
 
-    private void unlinkSelectedNewTests() {
+    private void unlinkMappedNewTests() {
         RequirementCoverage row = getSelectedRow();
         if (row == null) {
             return;
         }
-        row.getLinkedNewTests().removeAll(newTestsList.getSelectedValuesList());
+        row.getLinkedNewTests().removeAll(mappedNewTestsList.getSelectedValuesList());
         saveDetails(row);
         tableModel.fireTableDataChanged();
+        refreshMappedLists(row);
         refreshCoverageSummary();
     }
 
@@ -246,8 +328,78 @@ public class GapAnalysisPage extends WizardPage {
         coverageSummaryLabel.setText("Coverage: " + covered + "/" + rows.size() + " covered");
     }
 
-    private static final class CoverageTableModel extends AbstractTableModel {
-        private static final String[] COLUMNS = {
+    private void refreshMappedLists(RequirementCoverage row) {
+        mappedExistingTestsModel.clear();
+        mappedNewTestsModel.clear();
+        if (row == null) {
+            return;
+        }
+        for (String iri : row.getLinkedExistingTests()) {
+            TestCatalogEntry entry = findCatalogEntry(iri);
+            mappedExistingTestsModel.addElement(entry != null ? displayNameForEntry(entry) : iri);
+        }
+        for (String label : row.getLinkedNewTests()) {
+            mappedNewTestsModel.addElement(label);
+        }
+    }
+
+    private Set<String> termsForRow(RequirementCoverage row) {
+        Set<String> terms = new HashSet<>();
+        if (row == null || row.getInformationElements() == null) {
+            return terms;
+        }
+        String[] tokens = row.getInformationElements().split(",");
+        for (String token : tokens) {
+            String term = token.trim();
+            if (!term.isEmpty()) {
+                terms.add(term.toLowerCase(Locale.ROOT));
+            }
+        }
+        return terms;
+    }
+
+    private TestCatalogEntry findCatalogEntry(String iri) {
+        return catalogEntriesByIri.get(iri);
+    }
+
+    private String displayNameForEntry(TestCatalogEntry entry) {
+        return entry.getLabel() != null && !entry.getLabel().trim().isEmpty()
+                ? entry.getLabel().trim() : entry.getIri();
+    }
+
+    private String formatExistingTestLabels(List<String> iris) {
+        List<String> labels = new ArrayList<>();
+        for (String iri : iris) {
+            String option = iriToExistingOption.get(iri);
+            if (option != null) {
+                labels.add(option);
+                continue;
+            }
+            TestCatalogEntry entry = findCatalogEntry(iri);
+            labels.add(entry != null ? displayNameForEntry(entry) : iri);
+        }
+        return String.join("; ", labels);
+    }
+
+    private String resolveMappedExistingSelectionToIri(String selected, RequirementCoverage row) {
+        String direct = existingOptionToIri.get(selected);
+        if (direct != null) {
+            return direct;
+        }
+        for (String iri : row.getLinkedExistingTests()) {
+            if (iri.equals(selected)) {
+                return iri;
+            }
+            TestCatalogEntry entry = findCatalogEntry(iri);
+            if (entry != null && displayNameForEntry(entry).equals(selected)) {
+                return iri;
+            }
+        }
+        return null;
+    }
+
+    private final class CoverageTableModel extends AbstractTableModel {
+        private final String[] COLUMNS = {
                 "Requirement ID/summary",
                 "Information Element(s)",
                 "Existing Tests mapped",
@@ -286,7 +438,7 @@ public class GapAnalysisPage extends WizardPage {
                 case 1:
                     return nvl(row.getInformationElements());
                 case 2:
-                    return String.join("; ", row.getLinkedExistingTests());
+                    return formatExistingTestLabels(row.getLinkedExistingTests());
                 case 3:
                     return String.join("; ", row.getLinkedNewTests());
                 case 4:
