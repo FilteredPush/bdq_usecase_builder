@@ -1229,27 +1229,18 @@ public class NewTestPage extends WizardPage {
      * Builds the IE quick-insert panel once.  Contains:
      * <ul>
      *   <li>a picklist (JComboBox) of IEs associated with the <em>current</em> test</li>
-     *   <li>buttons for {@code bdqval:Empty} and {@code bdqval:NotEmpty}</li>
      *   <li>an "Insert" button that appends the selected item to the condition field</li>
+     *   <li>buttons for {@code bdqval:Empty} and {@code bdqval:NotEmpty}</li>
      * </ul>
      * The combo's contents are refreshed via {@link #updateIeInsertCombo()} whenever the
      * test's IE lists change.
      */
     private JPanel buildIeInsertPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
-        // IE picklist first (order: IE picker, Empty, NotEmpty, Insert)
+        // Order: IE picker, Insert, bdqval:Empty, bdqval:NotEmpty
         ieInsertCombo.setPreferredSize(new java.awt.Dimension(200,
                 ieInsertCombo.getPreferredSize().height));
         panel.add(ieInsertCombo);
-        // Fixed bdqval buttons
-        for (String val : List.of("bdqval:Empty", "bdqval:NotEmpty")) {
-            JButton b = new JButton(val);
-            b.setFont(b.getFont().deriveFont(11.0f));
-            b.setToolTipText("Append \"" + val + "\" to the IF condition");
-            final String token = val;
-            b.addActionListener(e -> appendToCondition(token));
-            panel.add(b);
-        }
         JButton insertIeButton = new JButton("Insert");
         insertIeButton.setFont(insertIeButton.getFont().deriveFont(11.0f));
         insertIeButton.setToolTipText("Append the selected IE to the IF condition field");
@@ -1260,6 +1251,15 @@ public class NewTestPage extends WizardPage {
             }
         });
         panel.add(insertIeButton);
+        // Fixed bdqval buttons
+        for (String val : List.of("bdqval:Empty", "bdqval:NotEmpty")) {
+            JButton b = new JButton(val);
+            b.setFont(b.getFont().deriveFont(11.0f));
+            b.setToolTipText("Append \"" + val + "\" to the IF condition");
+            final String token = val;
+            b.addActionListener(e -> appendToCondition(token));
+            panel.add(b);
+        }
         return panel;
     }
 

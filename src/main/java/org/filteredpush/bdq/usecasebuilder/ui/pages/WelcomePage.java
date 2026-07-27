@@ -4,6 +4,7 @@ import org.filteredpush.bdq.usecasebuilder.catalog.TestCatalogEntry;
 import org.filteredpush.bdq.usecasebuilder.catalog.TestCatalogService;
 import org.filteredpush.bdq.usecasebuilder.model.InformationElementRef;
 import org.filteredpush.bdq.usecasebuilder.model.ProjectState;
+import org.filteredpush.bdq.usecasebuilder.model.TestDraft;
 import org.filteredpush.bdq.usecasebuilder.model.UseCaseDraft;
 import org.filteredpush.bdq.usecasebuilder.service.ProjectStateSerializer;
 import org.filteredpush.bdq.usecasebuilder.service.RdfProjectLoader;
@@ -285,6 +286,10 @@ public class WelcomePage extends WizardPage {
             for (InformationElementRef ref : loaded.getInformationElements()) {
                 state.addInformationElement(ref);
             }
+            state.clearNewTestDrafts();
+            for (TestDraft draft : loaded.getNewTestDrafts()) {
+                state.addNewTestDraft(draft);
+            }
             if (loaded.getAdditionalVocabUri() != null) {
                 state.setAdditionalVocabUri(loaded.getAdditionalVocabUri());
             }
@@ -294,9 +299,11 @@ public class WelcomePage extends WizardPage {
             // Refresh displayed fields
             onEnter();
             projectFileDisplay.setText(file.getAbsolutePath());
-            JOptionPane.showMessageDialog(this,
-                    "Project loaded successfully from:\n" + file.getAbsolutePath(),
-                    "Project loaded",
+            String msg = "Project loaded successfully from:\n" + file.getAbsolutePath()
+                    + "\n\nLoaded: " + loaded.getInformationElements().size()
+                    + " information element(s), "
+                    + loaded.getNewTestDrafts().size() + " draft test(s).";
+            JOptionPane.showMessageDialog(this, msg, "Project loaded",
                     JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
