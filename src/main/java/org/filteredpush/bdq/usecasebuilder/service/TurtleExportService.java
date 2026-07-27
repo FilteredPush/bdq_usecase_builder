@@ -161,6 +161,7 @@ public class TurtleExportService {
         }
         if (uc.getDescription() != null && !uc.getDescription().isEmpty()) {
             ucRes.addProperty(RDFS.comment, uc.getDescription());
+            ucRes.addProperty(SKOS.definition, uc.getDescription());
         }
         if (uc.getFitnessRequirementsText() != null
                 && !uc.getFitnessRequirementsText().isEmpty()) {

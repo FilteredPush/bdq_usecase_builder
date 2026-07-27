@@ -316,6 +316,11 @@ public class ReviewExportPage extends WizardPage {
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         chooser.setFileFilter(new FileNameExtensionFilter(
                 "BDQ project files (*.properties)", "properties"));
+        // Start from the output directory if configured
+        String outDir = state.getOutputDirectory();
+        if (outDir != null && !outDir.trim().isEmpty()) {
+            chooser.setCurrentDirectory(new File(outDir.trim()));
+        }
         chooser.setSelectedFile(new File("bdq_project.properties"));
         if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
             return;
@@ -323,6 +328,18 @@ public class ReviewExportPage extends WizardPage {
         File file = chooser.getSelectedFile();
         if (!file.getName().endsWith(".properties")) {
             file = new File(file.getAbsolutePath() + ".properties");
+        }
+        // Warn before overwriting an existing file
+        if (file.exists()) {
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "The file already exists:\n" + file.getAbsolutePath()
+                    + "\n\nOverwrite?",
+                    "Overwrite confirmation",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+            if (confirm != JOptionPane.YES_OPTION) {
+                return;
+            }
         }
         try {
             projectSerializer.save(state, file);

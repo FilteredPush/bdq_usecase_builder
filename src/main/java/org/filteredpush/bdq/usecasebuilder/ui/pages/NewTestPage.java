@@ -21,6 +21,7 @@ import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
@@ -29,10 +30,17 @@ import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.JTree;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -41,6 +49,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -77,6 +86,7 @@ public class NewTestPage extends WizardPage {
     private JRadioButton actedUponRadio;
     private JRadioButton consultedRadio;
     private JButton addIeButton;
+    private JButton browseIeButton;
     private DefaultListModel<String> actedUponListModel;
     private DefaultListModel<String> consultedListModel;
     private JList<String> actedUponList;
@@ -276,7 +286,7 @@ public class NewTestPage extends WizardPage {
         // Multi-IE fields
         ieAddCombo = new JComboBox<>();
         ieAddCombo.setEditable(true);
-        ieAddCombo.setToolTipText("Select or type the information element to add");
+        ieAddCombo.setToolTipText("Shows use-case IEs; use Browse… to pick any vocabulary term");
         actedUponRadio = new JRadioButton("ActedUpon", true);
         actedUponRadio.setToolTipText("The test acts directly on this element");
         consultedRadio = new JRadioButton("Consulted");
@@ -287,6 +297,9 @@ public class NewTestPage extends WizardPage {
         addIeButton = new JButton("Add");
         addIeButton.setToolTipText("Add the selected term to the appropriate list");
         addIeButton.addActionListener(e -> addIeToList());
+        browseIeButton = new JButton("Browse…");
+        browseIeButton.setToolTipText("Browse the full vocabulary to add any term");
+        browseIeButton.addActionListener(e -> openIeVocabularyBrowser());
 
         actedUponListModel = new DefaultListModel<>();
         actedUponList = new JList<>(actedUponListModel);
@@ -526,14 +539,15 @@ public class NewTestPage extends WizardPage {
     private JPanel buildIePanel() {
         JPanel panel = new JPanel(new BorderLayout(4, 4));
 
-        // Top: add-row (combo + role radios + Add button)
+        // Top: add-row (combo + role radios + Add button + Browse button)
         JPanel addRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         addRow.add(new JLabel("Term:"));
-        ieAddCombo.setPreferredSize(new java.awt.Dimension(220, ieAddCombo.getPreferredSize().height));
+        ieAddCombo.setPreferredSize(new java.awt.Dimension(200, ieAddCombo.getPreferredSize().height));
         addRow.add(ieAddCombo);
         addRow.add(actedUponRadio);
         addRow.add(consultedRadio);
         addRow.add(addIeButton);
+        addRow.add(browseIeButton);
         panel.add(addRow, BorderLayout.NORTH);
 
         // Center: two lists side by side
@@ -769,17 +783,14 @@ public class NewTestPage extends WizardPage {
     }
 
     private void refreshPicklists() {
-        // Populate ie add combo with use-case IEs first, then full vocabulary
+        // Populate ie add combo with ONLY use-case IEs (user can browse full vocab via Browse…)
         List<String> infoTerms = new ArrayList<>();
         for (InformationElementRef ref : state.getInformationElements()) {
             if (ref.getQname() != null && !ref.getQname().trim().isEmpty()) {
                 infoTerms.add(ref.getQname().trim());
             }
         }
-        // Also add full vocabulary terms (deduplicated)
-        LinkedHashSet<String> allTerms = new LinkedHashSet<>(infoTerms);
-        allTerms.addAll(vocabularyService.getInformationElementTerms());
-        resetComboItems(ieAddCombo, new ArrayList<>(allTerms));
+        resetComboItems(ieAddCombo, infoTerms);
         ieAddCombo.setSelectedItem("");
 
         resetComboItems(dimensionCombo, vocabularyService.getBdqDimensions());
@@ -903,6 +914,127 @@ public class NewTestPage extends WizardPage {
             }
         }
         return false;
+    }
+
+    /**
+     * Opens a vocabulary browser dialog that allows the user to pick any term from the
+     * full configured vocabulary (not just the use-case IEs).  On selection the term is
+     * added to the appropriate ActedUpon / Consulted list according to the current radio
+     * button state.  The dialog stays open until the user clicks Close.
+     */
+    private void openIeVocabularyBrowser() {
+        Frame owner = (Frame) SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(owner, "Vocabulary Browser", true);
+        dialog.setSize(500, 500);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout(8, 8));
+
+        // Build tree grouped by vocabulary prefix; exclude bdq* ontology
+        // vocabularies (bdqdim, bdqcrit, bdqenh, etc.) since those are not
+        // information-element terms – they are used for dimension/criterion
+        // picklists elsewhere in the form.
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode("Vocabularies");
+        Map<String, List<String>> allVocabs = vocabularyService.getAllVocabularies();
+        for (Map.Entry<String, List<String>> entry : allVocabs.entrySet()) {
+            String vocabId = entry.getKey();
+            List<String> terms = entry.getValue();
+            if (vocabId.startsWith("bdq") || terms.isEmpty()) {
+                continue;
+            }
+            DefaultMutableTreeNode vocabNode = new DefaultMutableTreeNode(vocabId);
+            for (String term : terms) {
+                vocabNode.add(new DefaultMutableTreeNode(term));
+            }
+            root.add(vocabNode);
+        }
+        JTree tree = new JTree(new DefaultTreeModel(root));
+        tree.setRootVisible(false);
+        tree.setShowsRootHandles(true);
+
+        // Filter field
+        JTextField filterField = new JTextField();
+        filterField.setToolTipText("Filter terms");
+        filterField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { filterIeTree(tree, root, filterField.getText()); }
+            @Override public void removeUpdate(DocumentEvent e) { filterIeTree(tree, root, filterField.getText()); }
+            @Override public void changedUpdate(DocumentEvent e) { filterIeTree(tree, root, filterField.getText()); }
+        });
+
+        JPanel filterPanel = new JPanel(new BorderLayout(4, 0));
+        filterPanel.add(new JLabel("Filter: "), BorderLayout.WEST);
+        filterPanel.add(filterField, BorderLayout.CENTER);
+        filterPanel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        dialog.add(filterPanel, BorderLayout.NORTH);
+        dialog.add(new JScrollPane(tree), BorderLayout.CENTER);
+
+        JPanel btnPanel = new JPanel();
+        JButton selectButton = new JButton("Add selected");
+        selectButton.addActionListener(e -> {
+            int[] rows = tree.getSelectionRows();
+            if (rows == null) return;
+            for (int row : rows) {
+                Object node = tree.getPathForRow(row).getLastPathComponent();
+                if (node instanceof DefaultMutableTreeNode) {
+                    Object val = ((DefaultMutableTreeNode) node).getUserObject();
+                    if (val != null) {
+                        String qname = val.toString().trim();
+                        // A minimal qualified-name check: must contain ":" to distinguish
+                        // vocabulary nodes (e.g. "dwc:") from term leaf nodes.  The values
+                        // come from the controlled vocabulary, so deeper validation is
+                        // unnecessary here.
+                        if (qname.contains(":")) {
+                            if (actedUponRadio.isSelected()) {
+                                if (!containsItem(actedUponListModel, qname)) {
+                                    actedUponListModel.addElement(qname);
+                                }
+                            } else {
+                                if (!containsItem(consultedListModel, qname)) {
+                                    consultedListModel.addElement(qname);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            applySuggestions();
+            updateIeInsertCombo();
+            updateSuggestButtonState();
+            markDirty();
+            // Dialog stays open – user closes it explicitly
+        });
+        JButton closeButton = new JButton("Close");
+        closeButton.addActionListener(e -> dialog.dispose());
+        btnPanel.add(selectButton);
+        btnPanel.add(closeButton);
+        dialog.add(btnPanel, BorderLayout.SOUTH);
+        dialog.setVisible(true);
+    }
+
+    /** Filters the IE vocabulary browser tree by the given query string. */
+    private static void filterIeTree(JTree tree, DefaultMutableTreeNode root, String query) {
+        if (query == null || query.trim().isEmpty()) {
+            tree.setModel(new DefaultTreeModel(root));
+            return;
+        }
+        String lower = query.toLowerCase(Locale.ROOT);
+        DefaultMutableTreeNode filtered = new DefaultMutableTreeNode("Vocabularies");
+        for (int i = 0; i < root.getChildCount(); i++) {
+            DefaultMutableTreeNode vocabNode = (DefaultMutableTreeNode) root.getChildAt(i);
+            DefaultMutableTreeNode filteredVocab = new DefaultMutableTreeNode(vocabNode.getUserObject());
+            for (int j = 0; j < vocabNode.getChildCount(); j++) {
+                DefaultMutableTreeNode termNode = (DefaultMutableTreeNode) vocabNode.getChildAt(j);
+                if (termNode.getUserObject().toString().toLowerCase(Locale.ROOT).contains(lower)) {
+                    filteredVocab.add(new DefaultMutableTreeNode(termNode.getUserObject()));
+                }
+            }
+            if (filteredVocab.getChildCount() > 0) {
+                filtered.add(filteredVocab);
+            }
+        }
+        tree.setModel(new DefaultTreeModel(filtered));
+        for (int i = 0; i < tree.getRowCount(); i++) {
+            tree.expandRow(i);
+        }
     }
 
     private List<String> listModelToList(DefaultListModel<String> model) {
@@ -1096,15 +1228,19 @@ public class NewTestPage extends WizardPage {
     /**
      * Builds the IE quick-insert panel once.  Contains:
      * <ul>
-     *   <li>buttons for {@code bdqval:Empty} and {@code bdqval:NotEmpty}</li>
      *   <li>a picklist (JComboBox) of IEs associated with the <em>current</em> test</li>
-     *   <li>an "Insert" button that appends the selected IE to the condition field</li>
+     *   <li>buttons for {@code bdqval:Empty} and {@code bdqval:NotEmpty}</li>
+     *   <li>an "Insert" button that appends the selected item to the condition field</li>
      * </ul>
      * The combo's contents are refreshed via {@link #updateIeInsertCombo()} whenever the
      * test's IE lists change.
      */
     private JPanel buildIeInsertPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        // IE picklist first (order: IE picker, Empty, NotEmpty, Insert)
+        ieInsertCombo.setPreferredSize(new java.awt.Dimension(200,
+                ieInsertCombo.getPreferredSize().height));
+        panel.add(ieInsertCombo);
         // Fixed bdqval buttons
         for (String val : List.of("bdqval:Empty", "bdqval:NotEmpty")) {
             JButton b = new JButton(val);
@@ -1114,10 +1250,6 @@ public class NewTestPage extends WizardPage {
             b.addActionListener(e -> appendToCondition(token));
             panel.add(b);
         }
-        // IE picklist
-        ieInsertCombo.setPreferredSize(new java.awt.Dimension(200,
-                ieInsertCombo.getPreferredSize().height));
-        panel.add(ieInsertCombo);
         JButton insertIeButton = new JButton("Insert");
         insertIeButton.setFont(insertIeButton.getFont().deriveFont(11.0f));
         insertIeButton.setToolTipText("Append the selected IE to the IF condition field");

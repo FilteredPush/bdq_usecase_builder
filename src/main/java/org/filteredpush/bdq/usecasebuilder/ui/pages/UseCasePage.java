@@ -21,8 +21,9 @@ import java.util.List;
  *
  * <p>Collects the use case name, a description, fitness-for-use requirements
  * narrative, and an optional scope note.  The fitness requirements are stored
- * internally as an HTML fragment ({@code <p>…</p><ul><li>…</li></ul>}) so that
- * they round-trip correctly when exported to RDF and then re-loaded.</p>
+ * as an introductory plain-text line followed by a {@code <ul><li>…</li></ul>}
+ * block (no {@code <p>} tags) so that they round-trip correctly when exported
+ * to RDF and then re-loaded.</p>
  */
 public class UseCasePage extends WizardPage {
 
@@ -30,7 +31,7 @@ public class UseCasePage extends WizardPage {
     private JTextArea descriptionArea;
     private JTextArea fitnessLeadArea;
     private JTextArea fitnessPropertiesArea;
-    private JTextArea scopeNoteArea;
+    private JTextField scopeNoteField;
     private boolean updatingFitnessLeadTemplate;
     private boolean fitnessLeadUserEdited;
 
@@ -61,7 +62,7 @@ public class UseCasePage extends WizardPage {
         nameField.setText(nvl(draft.getName()));
         descriptionArea.setText(nvl(draft.getDescription()));
         loadFitnessClauses(nvl(draft.getFitnessRequirementsText()));
-        scopeNoteArea.setText(nvl(draft.getScopeNote()));
+        scopeNoteField.setText(nvl(draft.getScopeNote()));
         ensureFitnessTemplate();
     }
 
@@ -71,7 +72,7 @@ public class UseCasePage extends WizardPage {
         draft.setName(nameField.getText().trim());
         draft.setDescription(descriptionArea.getText().trim());
         draft.setFitnessRequirementsText(buildFitnessRequirementsText());
-        String sn = scopeNoteArea.getText().trim();
+        String sn = scopeNoteField.getText().trim();
         draft.setScopeNote(sn.isEmpty() ? null : sn);
     }
 
@@ -126,23 +127,20 @@ public class UseCasePage extends WizardPage {
                 "One property per line (a bulleted list will be generated in export text)");
 
         JLabel scopeNoteLabel = new JLabel("Scope note (optional):");
-        scopeNoteArea = new JTextArea(3, 40);
-        scopeNoteArea.setLineWrap(true);
-        scopeNoteArea.setWrapStyleWord(true);
-        scopeNoteArea.setToolTipText(
+        scopeNoteField = new JTextField(40);
+        scopeNoteField.setToolTipText(
                 "An optional skos:scopeNote providing additional context for the use case");
 
         JScrollPane descScroll = new JScrollPane(descriptionArea);
         JScrollPane fitnessLeadScroll = new JScrollPane(fitnessLeadArea);
         JScrollPane fitnessPropsScroll = new JScrollPane(fitnessPropertiesArea);
-        JScrollPane scopeNoteScroll = new JScrollPane(scopeNoteArea);
 
         // Use GridBag for the form
         JScrollPane formWrapper = buildForm(
                 introLabel, nameLabel, nameField,
                 descLabel, descScroll,
                 fitnessLabel, fitnessLeadScroll, fitnessPropsScroll,
-                scopeNoteLabel, scopeNoteScroll);
+                scopeNoteLabel, scopeNoteField);
         add(formWrapper, BorderLayout.CENTER);
 
         nameField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
@@ -162,7 +160,7 @@ public class UseCasePage extends WizardPage {
                                    JLabel descLabel, JScrollPane descScroll,
                                    JLabel fitnessLabel, JScrollPane fitnessLeadScroll,
                                    JScrollPane fitnessPropsScroll,
-                                   JLabel scopeNoteLabel, JScrollPane scopeNoteScroll) {
+                                   JLabel scopeNoteLabel, JTextField scopeNoteField) {
         // Use GridBagLayout
         java.awt.Container form = new javax.swing.JPanel(new GridBagLayout());
         form.setBackground(getBackground());
@@ -213,8 +211,9 @@ public class UseCasePage extends WizardPage {
         lc.gridy = 5;
         form.add(scopeNoteLabel, lc);
         fc.gridy = 5;
-        fc.weighty = 0.2;
-        form.add(scopeNoteScroll, fc);
+        fc.weighty = 0;
+        fc.fill = GridBagConstraints.HORIZONTAL;
+        form.add(scopeNoteField, fc);
 
         return new JScrollPane(form);
     }
@@ -244,13 +243,18 @@ public class UseCasePage extends WizardPage {
     }
 
     private void loadFitnessClausesFromHtml(String html) {
-        // Extract lead paragraph: text before <ul> (strip <p> tags)
+        // Extract lead text: everything before <ul>.
+        // Strip any legacy <p> wrapper tags, then unescape HTML entities, then
+        // call stripHtmlTags to remove any tag-like content that may have been
+        // reintroduced by unescaping (handles data that went through multiple
+        // encode/decode cycles in earlier versions).  Both branches apply the
+        // same stripHtmlTags(unescapeHtml(...)) pattern for consistency.
         String lead = "";
         String bullets = "";
         int ulStart = html.indexOf("<ul>");
         if (ulStart >= 0) {
-            lead = unescapeHtml(html.substring(0, ulStart)
-                    .replaceAll("</?p>", "").trim());
+            String beforeUl = html.substring(0, ulStart).replaceAll("</?p>", "").trim();
+            lead = stripHtmlTags(unescapeHtml(beforeUl)).trim();
             // Extract <li> items
             StringBuilder sb = new StringBuilder();
             int pos = ulStart;
@@ -265,7 +269,9 @@ public class UseCasePage extends WizardPage {
             }
             bullets = sb.toString();
         } else {
-            lead = unescapeHtml(stripHtmlTags(html).trim());
+            // No <ul> present: treat entire content as plain lead text, stripping
+            // any HTML tags that may have been embedded or reintroduced by unescaping.
+            lead = stripHtmlTags(unescapeHtml(html)).trim();
         }
         fitnessLeadArea.setText(lead);
         fitnessPropertiesArea.setText(bullets);
@@ -350,23 +356,28 @@ public class UseCasePage extends WizardPage {
     }
 
     /**
-     * Formats fitness requirements as an HTML fragment.
+     * Formats fitness requirements as an HTML fragment with only {@code ul} and
+     * {@code li} tags.  The introductory sentence is emitted as plain (HTML-escaped)
+     * text on its own line; no {@code <p>} wrapper is added.
      *
      * @param lead  the introductory sentence (may be empty)
      * @param items bullet-point items (may be empty)
-     * @return HTML-formatted string
+     * @return HTML-formatted string using only {@code ul}/{@code li} markup
      */
     private static String buildFitnessHtml(String lead, List<String> items) {
         StringBuilder text = new StringBuilder();
         if (!lead.isEmpty()) {
-            text.append("<p>").append(escapeHtml(lead)).append("</p>");
+            text.append(escapeHtml(lead));
         }
         if (!items.isEmpty()) {
-            text.append("\n<ul>\n");
+            if (text.length() > 0) {
+                text.append("\n");
+            }
+            text.append("<ul>\n");
             for (String item : items) {
                 text.append("<li>").append(escapeHtml(item)).append("</li>\n");
             }
-            text.append("</ul>\n");
+            text.append("</ul>");
         }
         return text.toString().trim();
     }
