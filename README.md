@@ -4,10 +4,12 @@ Application to build an RDF description of a use case with a set of included tes
 
 ## Overview
 
-`bdq_usecase_builder` is a Java application that helps you create TDWG BDQ (Biodiversity Data Quality) use cases and associated tests following the [BDQ Draft Standard](https://github.com/tdwg/bdq) and the guidance in the BDQ Tutorial. The application offers two modes:
+`bdq_usecase_builder` is a Java application that helps you define TDWG BDQ (Biodiversity Data Quality) use cases and associated test definitions following the [BDQ Draft Standard](https://github.com/tdwg/bdq) and the guidance in the [BDQ Tutorial](https://bdq.tdwg.org/draft/docs/tutorial/index.html).  This application is intended for use by biodiversity data quality practitioners to author use cases and test definitions in a guided, cyclical workflow. 
 
-1. **Console wizard** – a classic text-based menu (original interface).
-2. **Swing wizard UI** – a graphical guided authoring workbench (default, latest).
+The application offers two modes:
+
+1. **Swing wizard UI** – a graphical guided authoring workbench (default).
+2. **Console wizard** – a text-based wizard (original interface).
 
 ---
 
