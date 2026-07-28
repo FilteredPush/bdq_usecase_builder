@@ -176,10 +176,10 @@ public class TurtleExportService {
             addBdqResource(policyRes, BdqFfdq.includedInPolicy, testRes);
         }
 
-        if (includeExisting && !state.getSelectedExistingTestIris().isEmpty()) {
+        if (!state.getSelectedExistingTestIris().isEmpty()) {
             for (String iri : state.getSelectedExistingTestIris()) {
                 Resource existingTest = model.createResource(iri);
-                if (catalogService != null) {
+                if (includeExisting && catalogService != null) {
                     catalogService.getEntries().stream()
                             .filter(e -> iri.equals(e.getIri()))
                             .findFirst()
@@ -191,7 +191,7 @@ public class TurtleExportService {
                                     addBdqType(existingTest, testTypeResource(entry.getType()));
                                 }
                             });
-                } else {
+                } else if (includeExisting) {
                     addBdqType(existingTest, BdqFfdq.DataQualityNeed);
                 }
                 addBdqResource(policyRes, BdqFfdq.includedInPolicy, existingTest);

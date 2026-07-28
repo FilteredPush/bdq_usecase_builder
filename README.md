@@ -154,7 +154,7 @@ Use `getAllInformationElements()` on the draft to populate token pickers for cla
 
 **Minimal mode** (`usecase_new.ttl`):
 - Includes only the newly authored Use Case resource, its Policy, and newly authored tests.
-- Does not include existing tests that were merely selected/referenced.
+- Policy still asserts `bdqffdq:includedInPolicy` for selected existing tests, but Minimal mode does not serialize existing-test stubs.
 
 **Include Existing mode** (`usecase_with_existing.ttl`):
 - Includes everything from Minimal mode, plus stubs for all selected existing tests.

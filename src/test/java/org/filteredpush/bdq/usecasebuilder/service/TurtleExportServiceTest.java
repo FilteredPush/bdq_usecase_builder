@@ -139,6 +139,25 @@ class TurtleExportServiceTest {
     }
 
     @Test
+    void minimalModePolicyIncludesSelectedExistingTestsWithoutSerializingStubs() {
+        ProjectState state = buildSampleState();
+        state.addSelectedExistingTest("https://example.org/bdqtest/EXISTING_ONE");
+        state.addSelectedExistingTest("https://example.org/bdqtest/EXISTING_TWO");
+
+        Model model = service.buildModel(state, false, null);
+        Resource policy = model.listSubjectsWithProperty(RDF.type, BdqFfdq.Policy).next();
+        Resource existingOne = model.createResource("https://example.org/bdqtest/EXISTING_ONE");
+        Resource existingTwo = model.createResource("https://example.org/bdqtest/EXISTING_TWO");
+
+        assertTrue(model.contains(policy, BdqFfdq.includedInPolicy, existingOne));
+        assertTrue(model.contains(policy, BdqFfdq.includedInPolicy, existingTwo));
+        assertFalse(model.contains(existingOne, RDF.type, (RDFNode) null));
+        assertFalse(model.contains(existingTwo, RDF.type, (RDFNode) null));
+        assertFalse(model.contains(existingOne, RDFS.label, (RDFNode) null));
+        assertFalse(model.contains(existingTwo, RDFS.label, (RDFNode) null));
+    }
+
+    @Test
     void informationElementNodesUseComposedOfAndSupportMultipleTerms() {
         ProjectState state = buildSampleState();
         TestDraft draft = state.getNewTestDrafts().get(0);
