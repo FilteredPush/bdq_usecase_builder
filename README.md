@@ -4,10 +4,10 @@ Application to build an RDF description of a use case with a set of included tes
 
 ## Overview
 
-`bdq_usecase_builder` is a Java application that helps you create BDQ (Biodiversity Data Quality) use cases and associated tests following the [BDQ Framework](https://github.com/tdwg/bdq). The application offers two modes:
+`bdq_usecase_builder` is a Java application that helps you create TDWG BDQ (Biodiversity Data Quality) use cases and associated tests following the [BDQ Draft Standard](https://github.com/tdwg/bdq) and the guidance in the BDQ Tutorial. The application offers two modes:
 
-1. **Console wizard** – a classic text-based menu (the original interface).
-2. **Swing wizard UI** – a graphical guided authoring workbench (Phase 3, latest).
+1. **Console wizard** – a classic text-based menu (original interface).
+2. **Swing wizard UI** – a graphical guided authoring workbench (default, latest).
 
 ---
 
@@ -29,7 +29,7 @@ This produces a shaded (fat) jar at `target/bdq-usecase-builder-<version>-SNAPSH
 ### Launch the Swing wizard (recommended)
 
 ```bash
-java -jar target/bdq-usecase-builder-*-SNAPSHOT.jar --gui
+java -jar target/bdq-usecase-builder-*-SNAPSHOT.jar
 ```
 
 The workbench opens a large desktop window (default 1400×900, resizable; size and position are remembered across sessions) and guides you through:
@@ -73,10 +73,10 @@ Clicking **Export Now** (Turtle) or **Export (Markdown + JSON)** on the Review p
 
 ### Launch the console wizard
 
-Run the application without `--gui` to use the original console interface:
+Run the application with `--cli` to use the original console interface:
 
 ```bash
-java -jar target/bdq-usecase-builder-*-SNAPSHOT.jar [OPTIONS]
+java -jar target/bdq-usecase-builder-*-SNAPSHOT.jar --cli [OPTIONS]
 ```
 
 Options:
@@ -87,7 +87,7 @@ Options:
 -o, --output <file>     Output file path (default: usecase-output.ttl)
 -f, --format <fmt>      Output RDF format: TURTLE, RDF/XML, JSON-LD, N-TRIPLES
 -h, --help              Print help and exit
-    --gui               Launch the Swing wizard UI
+    --cli               Launch console wizard (default is GUI)
 ```
 
 ---
@@ -259,7 +259,7 @@ The Swing wizard UI included the Phase 1 baseline plus Phase 2 enhancements:
 
 ```
 src/main/java/org/filteredpush/bdq/usecasebuilder/
-  BdqUsecaseBuilder.java          Main entry point (--gui flag added)
+  BdqUsecaseBuilder.java          Main entry point (--gui flag added, changed to --cli)
   Configuration.java
   RdfLoader.java
   RdfWriter.java
@@ -315,7 +315,7 @@ src/main/resources/
 
 ---
 
-## Running the tests
+## Running the unit tests
 
 ```bash
 mvn test

@@ -29,7 +29,7 @@ import java.util.List;
  *   java -jar bdq-usecase-builder.jar [OPTIONS]
  *
  *   Options:
- *     --gui                   Launch the Swing wizard UI (Phase 1)
+ *     --cli                   Run the wizard on the command line, without launching the Swing UI 
  *     -c, --config &lt;file&gt;     Path to configuration file (default: config.properties)
  *     -i, --input &lt;file|IRI&gt;  Additional RDF inputs (may be repeated)
  *     -o, --output &lt;file&gt;     Output file path (default: usecase-output.ttl)
@@ -60,8 +60,8 @@ public class BdqUsecaseBuilder {
                 return;
             }
 
-            // --gui flag launches the Swing wizard (Phase 1)
-            if (cmd.hasOption("gui")) {
+            // by default launch the Swing wizard, unless cli is specified.
+            if (!cmd.hasOption("cli")) {
                 SwingUtilities.invokeLater(() -> {
                     WizardFrame wizardFrame = new WizardFrame();
                     wizardFrame.setVisible(true);
@@ -158,8 +158,8 @@ public class BdqUsecaseBuilder {
                 .build());
 
         options.addOption(Option.builder()
-                .longOpt("gui")
-                .desc("Launch the Swing wizard UI (Phase 1)")
+                .longOpt("cli")
+                .desc("Launch the wizard on the command line, without the Swing UI")
                 .build());
 
         return options;

@@ -1,0 +1,165 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'   # e.g. v0.1.0
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Extract version and artifact names from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"   # v0.1.0 -> 0.1.0
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          echo "main_jar=target/bdq-usecase-builder-${VERSION}.jar" >> "$GITHUB_OUTPUT"
+          echo "sources_jar=target/bdq-usecase-builder-${VERSION}-sources.jar" >> "$GITHUB_OUTPUT"
+          echo "javadoc_jar=target/bdq-usecase-builder-${VERSION}-javadoc.jar" >> "$GITHUB_OUTPUT"
+
+          echo "main_name=bdq-usecase-builder-${VERSION}.jar" >> "$GITHUB_OUTPUT"
+          echo "sources_name=bdq-usecase-builder-${VERSION}-sources.jar" >> "$GITHUB_OUTPUT"
+          echo "javadoc_name=bdq-usecase-builder-${VERSION}-javadoc.jar" >> "$GITHUB_OUTPUT"
+
+      - name: Set Maven project version from tag
+        run: mvn -B versions:set -DnewVersion=${{ steps.version.outputs.version }} -DgenerateBackupPoms=false
+
+      - name: Build, test, package, sources, and javadocs
+        run: mvn -B clean verify package source:jar javadoc:jar
+
+      - name: Verify artifacts exist
+        run: |
+          test -f "${{ steps.version.outputs.main_jar }}"
+          test -f "${{ steps.version.outputs.sources_jar }}"
+          test -f "${{ steps.version.outputs.javadoc_jar }}"
+
+      - name: Generate SHA-256 and SHA-512 checksums
+        run: |
+          sha256sum "${{ steps.version.outputs.main_jar }}" > "${{ steps.version.outputs.main_jar }}.sha256"
+          sha512sum "${{ steps.version.outputs.main_jar }}" > "${{ steps.version.outputs.main_jar }}.sha512"
+
+          sha256sum "${{ steps.version.outputs.sources_jar }}" > "${{ steps.version.outputs.sources_jar }}.sha256"
+          sha512sum "${{ steps.version.outputs.sources_jar }}" > "${{ steps.version.outputs.sources_jar }}.sha512"
+
+          sha256sum "${{ steps.version.outputs.javadoc_jar }}" > "${{ steps.version.outputs.javadoc_jar }}.sha256"
+          sha512sum "${{ steps.version.outputs.javadoc_jar }}" > "${{ steps.version.outputs.javadoc_jar }}.sha512"
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+
+      # Main jar
+      - name: Upload main jar
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.version.outputs.main_jar }}
+          asset_name: ${{ steps.version.outputs.main_name }}
+          asset_content_type: application/java-archive
+
+      - name: Upload main jar SHA-256
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.version.outputs.main_jar }}.sha256
+          asset_name: ${{ steps.version.outputs.main_name }}.sha256
+          asset_content_type: text/plain
+
+      - name: Upload main jar SHA-512
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.version.outputs.main_jar }}.sha512
+          asset_name: ${{ steps.version.outputs.main_name }}.sha512
+          asset_content_type: text/plain
+
+      # Sources jar
+      - name: Upload sources jar
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.version.outputs.sources_jar }}
+          asset_name: ${{ steps.version.outputs.sources_name }}
+          asset_content_type: application/java-archive
+
+      - name: Upload sources jar SHA-256
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.version.outputs.sources_jar }}.sha256
+          asset_name: ${{ steps.version.outputs.sources_name }}.sha256
+          asset_content_type: text/plain
+
+      - name: Upload sources jar SHA-512
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.version.outputs.sources_jar }}.sha512
+          asset_name: ${{ steps.version.outputs.sources_name }}.sha512
+          asset_content_type: text/plain
+
+      # Javadoc jar
+      - name: Upload javadoc jar
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.version.outputs.javadoc_jar }}
+          asset_name: ${{ steps.version.outputs.javadoc_name }}
+          asset_content_type: application/java-archive
+
+      - name: Upload javadoc jar SHA-256
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.version.outputs.javadoc_jar }}.sha256
+          asset_name: ${{ steps.version.outputs.javadoc_name }}.sha256
+          asset_content_type: text/plain
+
+      - name: Upload javadoc jar SHA-512
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.version.outputs.javadoc_jar }}.sha512
+          asset_name: ${{ steps.version.outputs.javadoc_name }}.sha512
+          asset_content_type: text/plain
