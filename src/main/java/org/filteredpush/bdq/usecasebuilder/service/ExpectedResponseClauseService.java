@@ -10,19 +10,19 @@ import java.util.Set;
 /**
  * Serializes/parses structured expected-response clauses.
  *
- * <p>The canonical display format is compact and human-readable:
+ * <p>The canonical display format is compact and human-readable:</p>
  * <pre>
  *   RESULT if condition;
  *   RESULT if condition;
  *   otherwise RESULT
  * </pre>
- * e.g.:
+ * <p>e.g.:</p>
  * <pre>
  *   INTERNAL_PREREQUISITES_NOT_MET if dwc:taxonRank is bdqval:Empty;
  *   COMPLIANT if dwc:taxonRank is species or lower;
  *   otherwise NOT_COMPLIANT
  * </pre>
- * Legacy format ({@code IF … THEN status=…}) is also parsed for backward
+ * <p>Legacy format ({@code IF … THEN status=…}) is also parsed for backward
  * compatibility with saved state.</p>
  */
 public class ExpectedResponseClauseService {

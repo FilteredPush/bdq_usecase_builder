@@ -51,12 +51,20 @@ public class ProjectState {
     // Use case draft
     // -----------------------------------------------------------------------
 
-    /** Returns the current use case draft. Never {@code null}. */
+    /**
+     * Returns the current use case draft. Never {@code null}.
+     *
+     * @return the current {@link UseCaseDraft}; never {@code null}
+     */
     public UseCaseDraft getUseCaseDraft() {
         return useCaseDraft;
     }
 
-    /** Replaces the current use case draft. */
+    /**
+     * Replaces the current use case draft.
+     *
+     * @param useCaseDraft the new use case draft to store
+     */
     public void setUseCaseDraft(UseCaseDraft useCaseDraft) {
         this.useCaseDraft = useCaseDraft;
     }
@@ -139,7 +147,11 @@ public class ProjectState {
         selectedExistingTestIris.clear();
     }
 
-    /** Sets the full list of selected existing test IRIs, replacing any previous selection. */
+    /**
+     * Sets the full list of selected existing test IRIs, replacing any previous selection.
+     *
+     * @param iris the list of test IRIs to select; {@code null} clears the selection
+     */
     public void setSelectedExistingTestIris(List<String> iris) {
         selectedExistingTestIris.clear();
         if (iris != null) {
@@ -190,12 +202,20 @@ public class ProjectState {
     // Gap analysis matrix rows
     // -----------------------------------------------------------------------
 
-    /** Returns an unmodifiable view of requirement coverage rows. */
+    /**
+     * Returns an unmodifiable view of requirement coverage rows.
+     *
+     * @return unmodifiable list of {@link RequirementCoverage} rows; never {@code null}
+     */
     public List<RequirementCoverage> getRequirementCoverageRows() {
         return Collections.unmodifiableList(requirementCoverageRows);
     }
 
-    /** Replaces requirement coverage rows. */
+    /**
+     * Replaces requirement coverage rows.
+     *
+     * @param rows the new list of coverage rows; {@code null} clears the list
+     */
     public void setRequirementCoverageRows(List<RequirementCoverage> rows) {
         requirementCoverageRows.clear();
         if (rows != null) {
@@ -209,12 +229,18 @@ public class ProjectState {
 
     /**
      * Returns the URI of an additional vocabulary to load IE terms from, or {@code null}.
+     *
+     * @return the additional vocabulary URI, or {@code null} if not set
      */
     public String getAdditionalVocabUri() {
         return additionalVocabUri;
     }
 
-    /** Sets the URI of an additional IE vocabulary to load. */
+    /**
+     * Sets the URI of an additional IE vocabulary to load.
+     *
+     * @param additionalVocabUri the URI of the additional vocabulary; may be {@code null}
+     */
     public void setAdditionalVocabUri(String additionalVocabUri) {
         this.additionalVocabUri = additionalVocabUri;
     }
@@ -226,12 +252,18 @@ public class ProjectState {
     /**
      * Returns the file path or URI of an additional RDF document to load tests and
      * use cases from, or {@code null}.
+     *
+     * @return the additional RDF source path or URI, or {@code null} if not set
      */
     public String getAdditionalRdfSource() {
         return additionalRdfSource;
     }
 
-    /** Sets the file path or URI of an additional RDF document. */
+    /**
+     * Sets the file path or URI of an additional RDF document.
+     *
+     * @param additionalRdfSource the file path or URI of the additional RDF document; may be {@code null}
+     */
     public void setAdditionalRdfSource(String additionalRdfSource) {
         this.additionalRdfSource = additionalRdfSource;
     }

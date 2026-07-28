@@ -151,6 +151,9 @@ public class ValidationService {
 
     /**
      * Validates structured authority/default and parameter definitions for a draft.
+     *
+     * @param draft the test draft to validate; returns an empty list if {@code null}
+     * @return list of validation error messages; empty if validation passes
      */
     public List<String> validateAuthorityAndParameters(TestDraft draft) {
         List<String> errors = new ArrayList<>();

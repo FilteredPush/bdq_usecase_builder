@@ -285,12 +285,20 @@ public class ShaclValidationService {
             return Collections.unmodifiableList(infoMessages);
         }
 
-        /** Returns total count of blocking errors. */
+        /**
+         * Returns total count of blocking errors.
+         *
+         * @return the number of blocking errors
+         */
         public int errorCount() {
             return blockingErrors.size();
         }
 
-        /** Returns total count of warnings. */
+        /**
+         * Returns total count of warnings.
+         *
+         * @return the number of warnings
+         */
         public int warningCount() {
             return warnings.size();
         }

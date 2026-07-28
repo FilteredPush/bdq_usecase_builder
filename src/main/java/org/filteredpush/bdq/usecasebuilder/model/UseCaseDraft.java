@@ -21,22 +21,38 @@ public class UseCaseDraft {
     // Getters and setters
     // -----------------------------------------------------------------------
 
-    /** Returns the name/label of the use case. */
+    /**
+     * Returns the name/label of the use case.
+     *
+     * @return the use case name, or {@code null} if not yet set
+     */
     public String getName() {
         return name;
     }
 
-    /** Sets the name/label of the use case. */
+    /**
+     * Sets the name/label of the use case.
+     *
+     * @param name the name/label of the use case
+     */
     public void setName(String name) {
         this.name = name;
     }
 
-    /** Returns the free-text description of the use case. */
+    /**
+     * Returns the free-text description of the use case.
+     *
+     * @return the description text, or {@code null} if not yet set
+     */
     public String getDescription() {
         return description;
     }
 
-    /** Sets the free-text description. */
+    /**
+     * Sets the free-text description.
+     *
+     * @param description the free-text description of the use case
+     */
     public void setDescription(String description) {
         this.description = description;
     }
@@ -44,12 +60,18 @@ public class UseCaseDraft {
     /**
      * Returns the narrative text describing the fitness-for-use requirements
      * that motivated this use case (the {@code hasFitnessRequirements} text).
+     *
+     * @return the fitness requirements narrative, or {@code null} if not yet set
      */
     public String getFitnessRequirementsText() {
         return fitnessRequirementsText;
     }
 
-    /** Sets the fitness-for-use requirements narrative. */
+    /**
+     * Sets the fitness-for-use requirements narrative.
+     *
+     * @param fitnessRequirementsText the fitness requirements narrative text
+     */
     public void setFitnessRequirementsText(String fitnessRequirementsText) {
         this.fitnessRequirementsText = fitnessRequirementsText;
     }

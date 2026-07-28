@@ -30,27 +30,47 @@ public class TestCatalogEntry {
         this.dimension = dimension;
     }
 
-    /** Returns the IRI of the test. */
+    /**
+     * Returns the IRI of the test.
+     *
+     * @return the IRI string identifying this test
+     */
     public String getIri() {
         return iri;
     }
 
-    /** Returns the machine-readable label. */
+    /**
+     * Returns the machine-readable label.
+     *
+     * @return the machine-readable label for this test
+     */
     public String getLabel() {
         return label;
     }
 
-    /** Returns the human-readable preferred label. */
+    /**
+     * Returns the human-readable preferred label.
+     *
+     * @return the skos:prefLabel for this test
+     */
     public String getPrefLabel() {
         return prefLabel;
     }
 
-    /** Returns the test type string. */
+    /**
+     * Returns the test type string.
+     *
+     * @return the test type string (e.g., {@code "Validation"})
+     */
     public String getType() {
         return type;
     }
 
-    /** Returns the data quality dimension. */
+    /**
+     * Returns the data quality dimension.
+     *
+     * @return the data quality dimension string (e.g., {@code "Completeness"})
+     */
     public String getDimension() {
         return dimension;
     }

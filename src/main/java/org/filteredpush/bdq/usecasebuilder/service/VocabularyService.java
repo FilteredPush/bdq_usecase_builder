@@ -50,27 +50,47 @@ public class VocabularyService {
         loadCustomInformationElementVocabularies();
     }
 
-    /** Returns bdqdim terms. */
+    /**
+     * Returns bdqdim terms.
+     *
+     * @return list of bdqdim vocabulary terms; never {@code null}
+     */
     public List<String> getBdqDimensions() {
         return getVocabulary("bdqdim");
     }
 
-    /** Returns bdqcrit terms. */
+    /**
+     * Returns bdqcrit terms.
+     *
+     * @return list of bdqcrit vocabulary terms; never {@code null}
+     */
     public List<String> getBdqCriteria() {
         return getVocabulary("bdqcrit");
     }
 
-    /** Returns bdqenh terms. */
+    /**
+     * Returns bdqenh terms.
+     *
+     * @return list of bdqenh vocabulary terms; never {@code null}
+     */
     public List<String> getBdqEnhancements() {
         return getVocabulary("bdqenh");
     }
 
-    /** Returns bdqval terms. */
+    /**
+     * Returns bdqval terms.
+     *
+     * @return list of bdqval vocabulary terms; never {@code null}
+     */
     public List<String> getBdqValidationTerms() {
         return getVocabulary("bdqval");
     }
 
-    /** Returns bdquc terms. */
+    /**
+     * Returns bdquc terms.
+     *
+     * @return list of bdquc vocabulary terms; never {@code null}
+     */
     public List<String> getBdqUseCaseTerms() {
         return getVocabulary("bdquc");
     }

@@ -65,7 +65,8 @@ public class InformationElementsPage extends WizardPage {
     /**
      * Creates the information elements page.
      *
-     * @param state shared project state
+     * @param state              shared project state
+     * @param vocabularyService  service providing available IE vocabulary terms
      */
     public InformationElementsPage(ProjectState state, VocabularyService vocabularyService) {
         super(state);

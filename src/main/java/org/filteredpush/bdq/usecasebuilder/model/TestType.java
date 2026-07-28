@@ -23,7 +23,11 @@ public enum TestType {
         this.displayName = displayName;
     }
 
-    /** Returns the human-readable display name for this test type. */
+    /**
+     * Returns the human-readable display name for this test type.
+     *
+     * @return the display name (e.g., {@code "Validation"}, {@code "Amendment"})
+     */
     public String getDisplayName() {
         return displayName;
     }
