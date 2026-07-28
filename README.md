@@ -92,25 +92,25 @@ Options:
 
 ---
 
-## Phase 3 scope
+## Overview
 
-Phase 3 delivers a guided-but-cyclical authoring workbench with improved usability, multi-IE test authoring, SHACL-aware Turtle export, and robust acceptance tests.
+The bdq_usecase_builder provides guided-but-cyclical authoring workbench with improved usability, multi-IE test authoring, SHACL-aware Turtle export, and robust acceptance tests.
 
-### Guided cyclical workflow (B1)
+### Guided cyclical workflow
 
 - Nine tutorial-aligned phases with completion status indicators in the sidebar.
 - Users can navigate backward/forward freely and jump to any phase without losing state.
 - Phase status: **Not started / In progress / Ready / Needs attention**.
 - Going backward or jumping saves state from the current page first.
 
-### Window size and preferences (B2)
+### Window size and preferences
 
 - Default window size 1400×900 (resizable).
 - Window size and position persisted via Java `Preferences` API and restored on next launch.
 
-### Evaluation matrix redesign (B3)
+### Evaluation matrix
 
-The gap analysis matrix was redesigned to be much more usable:
+The application provides a gap analysis matrix
 
 - **Two-pane model**: left = requirements/IE rows (matrix); right = available and linked tests.
 - **Explicit buttons**: Add Existing Test →, Add New Draft Test →, ← Remove Link, Add All →, ← Remove All.
@@ -118,15 +118,15 @@ The gap analysis matrix was redesigned to be much more usable:
 - **Search/filter**: separate search fields for the requirements table and for available tests.
 - **Coverage summary**: shows `X/N covered | K gap(s)` with color indicator.
 
-### Multi-valued information elements (B4)
+### Multi-valued information elements
 
-`TestDraft` now supports:
+`TestDraft` supports:
 - `actedUponElements` – list of ActedUpon terms (previously single-valued).
 - `consultedElements` – list of Consulted terms.
 - `getAllInformationElements()` – combined unique list for convenience.
 - Legacy `informationElement` field preserved for backward compatibility.
 
-### Convention-aware label suggestions (B5)
+### Convention-aware label suggestions
 
 `LabelSuggestionService` auto-suggests:
 - `rdfs:label` following `TESTTYPE_INFORMATIONELEMENT_CRITERION` pattern (e.g., `VALIDATION_SCIENTIFICNAME_NOTEMPTY`).
@@ -134,7 +134,7 @@ The gap analysis matrix was redesigned to be much more usable:
 
 Suggestions update when upstream fields (type, IE, criterion) change, **unless** the user has manually overridden the field (tracked by `labelUserOverridden` / `prefLabelUserOverridden` flags). Set the override flag to `true` to lock the value; clear it to resume auto-suggestion.
 
-### Expected response builder tokens (B6)
+### Expected response builder tokens
 
 The `ExpectedResponseClause` supports structured clause composition for common BDQ patterns:
 
@@ -184,7 +184,7 @@ Export mapping is constrained to a closed set of bdqffdq predicates/classes to p
 - No newline characters.
 - No HTML tags other than `ul` and `li` (disallowed tags are stripped/normalized at export time).
 
-### SHACL-aligned pre-export validation (B9)
+### SHACL-aligned pre-export validation
 
 `ShaclValidationService` checks the project state against bdqffdq-aligned constraints:
 
@@ -240,18 +240,20 @@ institution=inst:collectionCode,inst:recordQuality
 
 The repository includes a starter file at `vocab/custom-vocabularies.properties`.
 
----
+## Development
 
-## Phase 2 scope (prior release)
+### AI-assisted development disclosure
 
-The Swing wizard UI included the Phase 1 baseline plus Phase 2 enhancements:
-- Gap-analysis matrix page.
-- Expected-response clause builder.
-- Authority/parameter editor.
-- Conformance CSV generator.
-- Vocabulary picklists (bdqcrit, bdqenh, bdqval, bdquc, bdqdim).
-- Darwin Core, Audiovisual Core, and user-configurable custom vocabulary pickers.
-- Guidance text on every page.
+This project has used GitHub Copilot as an AI coding assistant during development.
+
+Copilot contributions are limited to suggested code and documentation text.  
+All accepted changes were reviewed, edited as needed, and validated by human maintainers before commit.
+
+#### Provenance and responsibility
+
+- Human maintainers are responsible for all design decisions, semantics, and released content.
+- AI-generated suggestions are treated as draft material and may contain errors.
+- Ontology-aligned terminology and normative language in this project are curated by maintainers.
 
 ---
 
