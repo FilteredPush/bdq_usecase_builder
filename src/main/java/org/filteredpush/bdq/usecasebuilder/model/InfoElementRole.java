@@ -21,7 +21,11 @@ public enum InfoElementRole {
         this.displayName = displayName;
     }
 
-    /** Returns the human-readable display name for this role. */
+    /**
+     * Returns the human-readable display name for this role.
+     *
+     * @return the display name (e.g., {@code "ActedUpon"} or {@code "Consulted"})
+     */
     public String getDisplayName() {
         return displayName;
     }

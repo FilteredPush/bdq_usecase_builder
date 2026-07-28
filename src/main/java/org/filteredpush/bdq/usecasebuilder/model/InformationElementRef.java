@@ -25,22 +25,38 @@ public class InformationElementRef {
         this.role = role;
     }
 
-    /** Returns the qualified name of this information element. */
+    /**
+     * Returns the qualified name of this information element.
+     *
+     * @return the qualified name (e.g., {@code dwc:scientificName})
+     */
     public String getQname() {
         return qname;
     }
 
-    /** Sets the qualified name of this information element. */
+    /**
+     * Sets the qualified name of this information element.
+     *
+     * @param qname the qualified name (e.g., {@code dwc:scientificName})
+     */
     public void setQname(String qname) {
         this.qname = qname;
     }
 
-    /** Returns the role of this information element. */
+    /**
+     * Returns the role of this information element.
+     *
+     * @return the role ({@code ACTED_UPON} or {@code CONSULTED})
+     */
     public InfoElementRole getRole() {
         return role;
     }
 
-    /** Sets the role of this information element. */
+    /**
+     * Sets the role of this information element.
+     *
+     * @param role the role ({@code ACTED_UPON} or {@code CONSULTED})
+     */
     public void setRole(InfoElementRole role) {
         this.role = role;
     }

@@ -14,6 +14,13 @@ import java.util.Map;
  */
 public class GapAnalysisService {
 
+    /**
+     * Builds requirement coverage rows from the fitness requirements text and
+     * information elements stored in the given project state.
+     *
+     * @param state the current project state; must not be {@code null}
+     * @return list of {@link RequirementCoverage} rows derived from the state
+     */
     public List<RequirementCoverage> buildRows(ProjectState state) {
         Map<String, RequirementCoverage> existingById = new LinkedHashMap<>();
         for (RequirementCoverage row : state.getRequirementCoverageRows()) {
@@ -74,6 +81,12 @@ public class GapAnalysisService {
         return rows;
     }
 
+    /**
+     * Counts the number of rows with {@link RequirementCoverage.CoverageStatus#COVERED} status.
+     *
+     * @param rows the list of requirement coverage rows to evaluate
+     * @return the number of covered rows
+     */
     public int countCovered(List<RequirementCoverage> rows) {
         int covered = 0;
         for (RequirementCoverage row : rows) {

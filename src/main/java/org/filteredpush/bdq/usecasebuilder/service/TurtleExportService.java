@@ -100,10 +100,27 @@ public class TurtleExportService {
             BdqFfdq.Consulted.getURI()
     );
 
+    /**
+     * Exports only the new test drafts and use-case definition to a Turtle file in the given directory.
+     *
+     * @param state     the current project state; must not be {@code null}
+     * @param outputDir the directory to write the Turtle file into
+     * @return the generated {@link File}
+     * @throws IOException if the output directory cannot be created or the file cannot be written
+     */
     public File exportMinimal(ProjectState state, File outputDir) throws IOException {
         return export(state, outputDir, false, null);
     }
 
+    /**
+     * Exports the new test drafts, use-case definition, and selected existing tests to a Turtle file.
+     *
+     * @param state          the current project state; must not be {@code null}
+     * @param outputDir      the directory to write the Turtle file into
+     * @param catalogService service providing metadata for selected existing tests
+     * @return the generated {@link File}
+     * @throws IOException if the output directory cannot be created or the file cannot be written
+     */
     public File exportWithExisting(ProjectState state, File outputDir,
             TestCatalogService catalogService) throws IOException {
         return export(state, outputDir, true, catalogService);

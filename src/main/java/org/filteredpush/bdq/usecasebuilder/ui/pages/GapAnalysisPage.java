@@ -100,6 +100,12 @@ public class GapAnalysisPage extends WizardPage {
     private final List<String> allExistingOptions = new ArrayList<>();
     private final List<String> allNewOptions = new ArrayList<>();
 
+    /**
+     * Creates the gap analysis page.
+     *
+     * @param state          shared project state
+     * @param catalogService service providing the known test catalog entries
+     */
     public GapAnalysisPage(ProjectState state, TestCatalogService catalogService) {
         super(state);
         this.catalogService = catalogService;

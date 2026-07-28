@@ -331,6 +331,12 @@ public class UsecaseWizard {
         /** The human-readable label of the test. */
         public final String label;
 
+        /**
+         * Creates a test entry with the given IRI and label.
+         *
+         * @param iri   the IRI of the test resource
+         * @param label the human-readable label of the test
+         */
         public TestEntry(String iri, String label) {
             this.iri = iri;
             this.label = label;

@@ -34,7 +34,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 
 /**
- * Wizard page – Review, Validate & Export.
+ * Wizard page – Review, Validate &amp; Export.
  *
  * <p>Phase 3 additions:</p>
  * <ul>

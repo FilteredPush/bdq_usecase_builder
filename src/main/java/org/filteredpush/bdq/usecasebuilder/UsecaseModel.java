@@ -145,12 +145,20 @@ public class UsecaseModel {
         this.label = label;
     }
 
-    /** Returns the free-text description of the use case. */
+    /**
+     * Returns the free-text description of the use case.
+     *
+     * @return the description text, or {@code null} if not yet set
+     */
     public String getDescription() {
         return description;
     }
 
-    /** Sets the free-text description. */
+    /**
+     * Sets the free-text description.
+     *
+     * @param description the free-text description of the use case
+     */
     public void setDescription(String description) {
         this.description = description;
     }
