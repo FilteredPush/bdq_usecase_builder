@@ -25,7 +25,7 @@ import java.util.UUID;
  *
  *   &lt;urn:uuid:…&gt; a bdqffdq:Policy ;
  *       bdqffdq:hasUseCase &lt;usecase-IRI&gt; ;
- *       bdqffdq:includesInPolicy &lt;test-IRI&gt; .
+ *       bdqffdq:includedInPolicy &lt;test-IRI&gt; .
  * </pre>
  *
  * <p>One {@code bdqffdq:Policy} resource is created for each test added to
@@ -84,7 +84,7 @@ public class UsecaseModel {
      *       label and description.</li>
      *   <li>One {@code bdqffdq:Policy} resource per associated test, linking
      *       the use case to that test via {@code bdqffdq:hasUseCase} and
-     *       {@code bdqffdq:includesInPolicy}.</li>
+     *       {@code bdqffdq:includedInPolicy}.</li>
      * </ul>
      *
      * @return a Jena Model ready for serialization
@@ -114,7 +114,7 @@ public class UsecaseModel {
             Resource policyResource = model.createResource(policyIri);
             policyResource.addProperty(RDF.type, BdqFfdq.Policy);
             policyResource.addProperty(BdqFfdq.hasUseCase, useCaseResource);
-            policyResource.addProperty(BdqFfdq.includesInPolicy,
+            policyResource.addProperty(BdqFfdq.includedInPolicy,
                     model.createResource(testIri));
         }
 

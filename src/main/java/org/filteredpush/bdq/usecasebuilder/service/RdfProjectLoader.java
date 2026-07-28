@@ -119,7 +119,7 @@ public class RdfProjectLoader {
                 String prefLabel = extractPrefLabel(model, res);
                 String typeName = typeUri.substring(typeUri.lastIndexOf('/') + 1);
                 String dimension = extractObjectLiteral(model, res,
-                        model.createProperty(BDQFFDQ_NS + "hasDimension"));
+                        model.createProperty(BDQFFDQ_NS + "hasDataQualityDimension"));
                 TestCatalogEntry entry = new TestCatalogEntry(
                         iri,
                         label != null ? label : "",
@@ -254,12 +254,18 @@ public class RdfProjectLoader {
 
     /**
      * Extracts the fitness-for-use requirements text from
-     * {@code bdqffdq:hasFitnessForUsePurpose} or, as a fallback, {@code dcterms:description}.
+     * {@code bdqffdq:hasFitnessRequirements} or, as a fallback, {@code dcterms:description}.
      */
     private String extractFitnessRequirementsText(Model model, Resource res) {
-        // Prefer bdqffdq:hasFitnessForUsePurpose
-        Property fitnessProp = model.createProperty(BDQFFDQ_NS + "hasFitnessForUsePurpose");
+        // Prefer bdqffdq:hasFitnessRequirements
+        Property fitnessProp = model.createProperty(BDQFFDQ_NS + "hasFitnessRequirements");
         Statement stmt = res.getProperty(fitnessProp);
+        if (stmt != null && stmt.getObject().isLiteral()) {
+            return stmt.getLiteral().getString();
+        }
+        // Backward compatibility: old predicate spelling
+        Property legacyFitnessProp = model.createProperty(BDQFFDQ_NS + "hasFitnessForUsePurpose");
+        stmt = res.getProperty(legacyFitnessProp);
         if (stmt != null && stmt.getObject().isLiteral()) {
             return stmt.getLiteral().getString();
         }
