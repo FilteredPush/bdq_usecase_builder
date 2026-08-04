@@ -249,7 +249,8 @@ The repository includes a starter file at `vocab/custom-vocabularies.properties`
 This project has used GitHub Copilot as an AI coding assistant during development.
 
 Copilot contributions are limited to suggested code and documentation text.  
-All accepted changes were reviewed, edited as needed, and validated by human maintainers before commit.
+All accepted changes were reviewed, edited as needed, and validated by human maintainers before
+merge into the master branch.
 
 #### Provenance and responsibility
 
