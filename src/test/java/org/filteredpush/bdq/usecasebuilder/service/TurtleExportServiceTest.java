@@ -82,7 +82,7 @@ class TurtleExportServiceTest {
                 BdqFfdq.hasEnhancement.getURI(),
                 BdqFfdq.forValidation.getURI(),
                 BdqFfdq.forIssue.getURI(),
-                BdqFfdq.forMeasurement.getURI(),
+                BdqFfdq.forMeasure.getURI(),
                 BdqFfdq.forAmendment.getURI(),
                 BdqFfdq.hasSpecification.getURI(),
                 BdqFfdq.hasExpectedResponse.getURI(),
@@ -117,7 +117,7 @@ class TurtleExportServiceTest {
         assertNeedMethodSpecificationChain(TestType.ISSUE, BdqFfdq.Issue,
                 BdqFfdq.IssueMethod, BdqFfdq.forIssue);
         assertNeedMethodSpecificationChain(TestType.MEASURE, BdqFfdq.Measure,
-                BdqFfdq.MeasurementMethod, BdqFfdq.forMeasurement);
+                BdqFfdq.MeasurementMethod, BdqFfdq.forMeasure);
         assertNeedMethodSpecificationChain(TestType.AMENDMENT, BdqFfdq.Amendment,
                 BdqFfdq.AmendmentMethod, BdqFfdq.forAmendment);
     }

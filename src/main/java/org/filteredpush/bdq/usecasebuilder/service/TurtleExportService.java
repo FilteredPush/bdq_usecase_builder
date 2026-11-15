@@ -75,7 +75,7 @@ public class TurtleExportService {
             BdqFfdq.hasEnhancement.getURI(),
             BdqFfdq.forValidation.getURI(),
             BdqFfdq.forIssue.getURI(),
-            BdqFfdq.forMeasurement.getURI(),
+            BdqFfdq.forMeasure.getURI(),
             BdqFfdq.forAmendment.getURI(),
             BdqFfdq.hasSpecification.getURI(),
             BdqFfdq.hasExpectedResponse.getURI(),
@@ -589,7 +589,7 @@ public class TurtleExportService {
                 return BdqFfdq.forAmendment;
             case MEASURE:
             default:
-                return BdqFfdq.forMeasurement;
+                return BdqFfdq.forMeasure;
         }
     }
 

@@ -44,7 +44,7 @@ import java.util.Properties;
  * ie.1.qname=dwc:taxonRank
  * ie.1.role=CONSULTED
  * sel.count=1
- * sel.0=https://rs.tdwg.org/bdq/terms/some-test-uuid
+ * sel.0=https://rs.tdwg.org/bdqtest/terms/some-test-uuid
  * draft.count=1
  * draft.0.label=VALIDATION_SCIENTIFICNAME_NOTEMPTY
  * draft.0.prefLabel=Validation Scientific Name Not Empty

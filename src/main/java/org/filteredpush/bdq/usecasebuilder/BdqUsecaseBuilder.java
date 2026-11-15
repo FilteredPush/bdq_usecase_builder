@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * Main entry point for the BDQ Use Case Builder application.
  *
- * <p>Loads the bdqffdq.owl ontology and bdqtest RDF (from configured IRIs), plus
+ * <p>Loads the bdqffdq ontology and bdqtest RDF (from configured IRIs), plus
  * any optional user-specified RDF files. It then presents an interactive wizard
  * that guides the user through creating a new use case, associating tests with
  * it, and writing the resulting RDF serialization to a local output file.</p>

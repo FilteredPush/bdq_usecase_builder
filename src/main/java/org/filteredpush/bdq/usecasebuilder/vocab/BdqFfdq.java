@@ -195,9 +195,9 @@ public final class BdqFfdq {
     public static final Property forIssue =
             ResourceFactory.createProperty(NS + "forIssue");
 
-    /** {@code bdqffdq:forMeasurement}. */
-    public static final Property forMeasurement =
-            ResourceFactory.createProperty(NS + "forMeasurement");
+    /** {@code bdqffdq:forMeasure}. */
+    public static final Property forMeasure =
+            ResourceFactory.createProperty(NS + "forMeasure");
 
     /** {@code bdqffdq:forAmendment}. */
     public static final Property forAmendment =

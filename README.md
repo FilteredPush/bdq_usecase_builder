@@ -244,6 +244,19 @@ The repository includes a starter file at `vocab/custom-vocabularies.properties`
 
 ## Development
 
+### Sources of BDQ definitions
+
+The builder loads the bdqffdq ontology and the BDQ Tests (`bdqtest`) from the IRIs in `config.properties`, by default the copies published with the draft standard: `https://bdq.tdwg.org/draft/dist/bdqffdq.ttl` and `https://bdq.tdwg.org/draft/dist/bdqtest.ttl`. The source of truth for the BDQ vocabularies, including the Tests, is [tdwg/rs.tdwg.org](https://github.com/tdwg/rs.tdwg.org) (branch `bdq` during the public review, served at [bdq-public-review.rs.tdwg.org](https://bdq-public-review.rs.tdwg.org/)); the files in `dist/` are generated from it. In `bdqtest.ttl` each Test is identified by its term IRI (`https://rs.tdwg.org/bdqtest/terms/<uuid>`, with `owl:sameAs` its bare `urn:uuid:`), and its Method, Specification, Arguments, information elements and Policies have IRIs of their own (e.g. `https://rs.tdwg.org/bdqtest/specification/<uuid>`).
+
+### Updating the bundled catalogs
+
+`src/main/resources/catalog/bdqtest_catalog.csv` and the BDQ picklists in `src/main/resources/catalog/vocabulary/` (`bdqcrit`, `bdqdim`, `bdqenh`, `bdquc`, `bdqval`) are generated; regenerate them after a new release of the BDQ vocabularies rather than editing them:
+
+```bash
+python scripts/update_catalogs.py        # needs rdflib; see --help for other sources, e.g. a local rs.tdwg.org checkout
+```
+
+
 ### AI-assisted development disclosure
 
 This project has used GitHub Copilot as an AI coding assistant during development.
@@ -316,6 +329,8 @@ src/main/java/org/filteredpush/bdq/usecasebuilder/
 src/main/resources/
   catalog/bdqtest_catalog.csv     Bundled BDQ test catalog
   catalog/vocabulary/*.csv        Bundled controlled vocabulary picklists
+scripts/
+  update_catalogs.py              Regenerates the bundled catalog and BDQ picklists
 ```
 
 ---
