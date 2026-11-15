@@ -259,9 +259,10 @@ python scripts/update_catalogs.py        # needs rdflib; see --help for other so
 
 ### AI-assisted development disclosure
 
-This project has used GitHub Copilot as an AI coding assistant during development.
+This project has used GitHub Copilot and Claude Code (Anthropic) as AI coding assistants during development.
+Commits made with Claude Code carry a `Co-Authored-By: Claude` trailer.
 
-Copilot contributions are limited to suggested code and documentation text.  
+Contributions from these assistants are limited to suggested code and documentation text.  
 All accepted changes were reviewed, edited as needed, and validated by human maintainers before
 merge into the master branch.
 

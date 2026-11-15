@@ -37,6 +37,15 @@
 				<role>AI coding assistant</role>
 			</roles>
 		</developer>
+		<developer>
+			<id>claude-code</id>
+			<name>Claude Code</name>
+			<organization>Anthropic</organization>
+			<organizationUrl>https://www.anthropic.com/claude-code</organizationUrl>
+			<roles>
+				<role>AI coding assistant</role>
+			</roles>
+		</developer>
 	</developers>
 
 	<scm>
