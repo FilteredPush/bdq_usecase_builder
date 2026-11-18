@@ -26,12 +26,12 @@ The application offers two modes:
 mvn package
 ```
 
-This produces a shaded (fat) jar at `target/bdq-usecase-builder-<version>-SNAPSHOT.jar`.
+This produces a shaded (fat) jar at `target/bdq-usecase-builder-<version>.jar` (for example `bdq-usecase-builder-0.1.2.jar`).
 
 ### Launch the Swing wizard (recommended)
 
 ```bash
-java -jar target/bdq-usecase-builder-*-SNAPSHOT.jar
+java -jar target/bdq-usecase-builder-<version>.jar
 ```
 
 The workbench opens a large desktop window (default 1400×900, resizable; size and position are remembered across sessions) and guides you through:
@@ -78,7 +78,7 @@ Clicking **Export Now** (Turtle) or **Export (Markdown + JSON)** on the Review p
 Run the application with `--cli` to use the original console interface:
 
 ```bash
-java -jar target/bdq-usecase-builder-*-SNAPSHOT.jar --cli [OPTIONS]
+java -jar target/bdq-usecase-builder-<version>.jar --cli [OPTIONS]
 ```
 
 Options:
